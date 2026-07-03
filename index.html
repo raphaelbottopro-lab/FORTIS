@@ -363,7 +363,7 @@ function nid(){return++D.nextId;}
 function sk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1);}
 function ta(s){if(!s)return 0;return[...s.epargne,...s.immobilier].reduce((a,x)=>a+x.valeur,0);}
 function ct(b){const c=b.courses;return c.semaines.filter(s=>s.reel!==null).reduce((a,x)=>a+x.reel,0)+c.semaines.filter(s=>s.reel===null).length*c.virementSem;}
-function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='En cours'?'#EF9F27':'#B4B2A9';return`<span class="sd" style="background:${c}"></span>`;}
+function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='Planifié'?'#EF9F27':'#B4B2A9';return`<span class="sd" style="background:${c}"></span>`;}
 
 function go(s){
   document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
@@ -412,14 +412,14 @@ function openBudgetSettings(){
   const coursesHidden=!!hiddenCats['courses'];
   openOv('Paramètres budget',`
     <div class="toggle-row">
-      <div><div class="toggle-lbl">Courses</div><div class="toggle-sub">Masquer la catégorie courses du budget</div></div>
-      <label class="toggle"><input type="checkbox" id="tog-courses" ${coursesHidden?'':'checked'} onchange="toggleCat('courses',this.checked)"><span class="tslider"></span></label>
+      <div><div class="toggle-lbl">Masquer les courses</div><div class="toggle-sub">Cache la catégorie courses du budget</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-courses" ${coursesHidden?'checked':''} onchange="toggleCat('courses',this.checked)"><span class="tslider"></span></label>
     </div>
   `,null);
 }
-function toggleCat(cat,visible){
-  if(visible) delete hiddenCats[cat];
-  else hiddenCats[cat]=true;
+function toggleCat(cat,hidden){
+  if(hidden) hiddenCats[cat]=true;
+  else delete hiddenCats[cat];
   saveHidden();renderB();
 }
 function dismissBanner(){
@@ -821,7 +821,7 @@ function selChip(el){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c
 
 function bForm(item,section){
   const cat=CATS.find(c=>c.key===section)||{};
-  const sts=['Débité','En cours','Planifié','Fait','Virement fait'],cpts=['CM','Bourso','Espèces'];
+  const sts=['Débité','Planifié','Fait'],cpts=['CM','Bourso','Espèces'];
   const cats={revenus:'Revenu',charges:'Charge fixe',abonnements:'Abonnement',epargne:'Épargne',plaisirs:'Plaisirs & Autres'};
   const cOpts=cpts.map(c=>`<option ${item&&item.compte===c?'selected':''}>${c}</option>`).join('');
   const cChips=Object.entries(cats).map(([k,v])=>`<div class="chip${section===k?' on':''}" onclick="selChip(this)" data-cat="${k}">${v}</div>`).join('');
