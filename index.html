@@ -270,8 +270,7 @@ function si(c,a){if(!c.sd)return a;return[...a].sort((x,y)=>dsk(x.date)-dsk(y.da
 function bk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1);}
 
 let cm=4,cy=2026,pm=4,py=2026,eid=null,es=null,dc=null;
-let hiddenCats=JSON.parse(localStorage.getItem('bb3_hidden')||'{}');
-function saveHidden(){localStorage.setItem('bb3_hidden',JSON.stringify(hiddenCats));}
+try{localStorage.removeItem('bb3_hidden')}catch(e){} // ancien réglage global supprimé (masquage désormais par mois)
 let ocm={};
 function goc(){const k=bk(cm,cy);if(!ocm[k])ocm[k]=new Set();return ocm[k];}
 
@@ -287,7 +286,7 @@ function baseBudget(){return{
 
 function newMonth(prev){
   const p=JSON.parse(JSON.stringify(prev));
-  p._closed=false;delete p._isNew;
+  p._closed=false;delete p._isNew;delete p._hideCourses;
   ['charges','abonnements'].forEach(k=>{p[k].forEach(i=>{i.statut='Planifié';i.date='';});});
   p.plaisirs=[];p.courses.semaines.forEach(s=>{s.reel=null;});
   p.epargne.forEach(i=>{i.statut='Planifié';i.date='';});
@@ -409,18 +408,24 @@ function chgPM(d){
 }
 
 function openBudgetSettings(){
-  const coursesHidden=!!hiddenCats['courses'];
-  openOv('Paramètres budget',`
+  const b=gcb();
+  if(!b){openOv('Paramètres budget',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)">Crée d'abord le budget de ce mois.</div>`,null);return;}
+  if(b._closed){
+    openOv('Paramètres budget',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)"><i class="ti ti-lock"></i> ${MN[cm]} ${cy} est clos — son affichage est figé.</div>`,null);
+    return;
+  }
+  const coursesHidden=!!b._hideCourses;
+  openOv('Paramètres budget — '+MN[cm]+' '+cy,`
     <div class="toggle-row">
-      <div><div class="toggle-lbl">Masquer les courses</div><div class="toggle-sub">Cache la catégorie courses du budget</div></div>
-      <label class="toggle"><input type="checkbox" id="tog-courses" ${coursesHidden?'checked':''} onchange="toggleCat('courses',this.checked)"><span class="tslider"></span></label>
+      <div><div class="toggle-lbl">Masquer les courses</div><div class="toggle-sub">Cache les courses de ${MN[cm]} ${cy} uniquement (exclues des totaux)</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-courses" ${coursesHidden?'checked':''} onchange="toggleHideCourses(this.checked)"><span class="tslider"></span></label>
     </div>
   `,null);
 }
-function toggleCat(cat,hidden){
-  if(hidden) hiddenCats[cat]=true;
-  else delete hiddenCats[cat];
-  saveHidden();renderB();
+function toggleHideCourses(hidden){
+  const b=gcb();if(!b||b._closed)return;
+  if(hidden)b._hideCourses=true;else delete b._hideCourses;
+  sv();renderB();renderH();
 }
 function dismissBanner(){
   const b=document.getElementById('nmb');
@@ -521,7 +526,7 @@ function renderB(){
 
   const oc=goc();let rv=0,dp=0,ep=0,html='';
   CATS.forEach(cat=>{
-    if(hiddenCats[cat.key])return; // catégorie masquée
+    if(cat.key==='courses'&&b._hideCourses)return; // courses masquées pour ce mois
     const op=oc.has(cat.key);
     if(cat.sp==='courses'){
       const c=b.courses,tot=ct(b),prev=c.previsionnel;
@@ -584,7 +589,7 @@ function renderB(){
 
   // Graphique budget
    // Graphique budget
-   const charg=b.charges.reduce((a,x)=>a+x.montant,0)+ct(b);
+   const charg=b.charges.reduce((a,x)=>a+x.montant,0)+(b._hideCourses?0:ct(b));
    const abos=b.abonnements.reduce((a,x)=>a+x.montant,0);
    const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
    const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
@@ -799,7 +804,7 @@ function renderH(){
   const all=[];
   b.revenus.forEach(x=>all.push({...x,_s:1}));
   ['charges','abonnements','epargne','plaisirs'].forEach(k=>b[k].forEach(x=>all.push({...x,_s:-1})));
-  all.push({id:9999,nom:'Courses',compte:'',statut:'',_s:-1,montant:ct(b)});
+  if(!b._hideCourses)all.push({id:9999,nom:'Courses',compte:'',statut:'',_s:-1,montant:ct(b)});
   all.sort((a,b2)=>b2.id-a.id);
   let h='';
   all.forEach(item=>{const c=item._s>0?'#1D9E75':'#D85A30',sg=item._s>0?'+':'−';
