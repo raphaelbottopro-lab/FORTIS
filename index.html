@@ -254,7 +254,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
     <div id="psecs"></div>
     <!-- Graphique patrimoine -->
     <div class="stl" style="margin-top:8px">Évolution du patrimoine</div>
-    <div class="chart-card">
+    <div class="chart-card" id="sparkcard">
       <div class="spark-head">
         <div>
           <div class="spark-lbl">Épargne + immobilier</div>
@@ -847,9 +847,9 @@ function renderSpark(){
       </linearGradient></defs>
       <path d="${area}" fill="url(#sparkgrad)"/>
       <path d="${line}" fill="none" stroke="#8B7CF0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <line id="sparkline" x1="0" y1="0" x2="0" y2="${H}" stroke="#8B7CF0" stroke-width="1" stroke-dasharray="3 3" opacity=".45" vector-effect="non-scaling-stroke"/>
-      <circle id="sparkhalo" cx="0" cy="0" r="7" fill="#8B7CF0" opacity=".25"/>
-      <circle id="sparkdot" cx="0" cy="0" r="3.5" fill="#8B7CF0"/>
+      <line id="sparkline" x1="0" y1="0" x2="0" y2="${H}" stroke="#8B7CF0" stroke-width="1" stroke-dasharray="3 3" opacity="0" vector-effect="non-scaling-stroke"/>
+      <circle id="sparkhalo" cx="0" cy="0" r="7" fill="#8B7CF0" opacity="0"/>
+      <circle id="sparkdot" cx="0" cy="0" r="3.5" fill="#8B7CF0" opacity="0"/>
     </svg>
     <div id="sparktip" style="position:absolute;top:0;pointer-events:none;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--bd1);border-radius:9px;padding:6px 9px;font-size:11px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.28);display:none"></div>
   </div>`;
@@ -862,34 +862,43 @@ function renderSpark(){
   const svg=document.getElementById('sparksvg');
   const move=e=>{
     const r=svg.getBoundingClientRect();
-    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-    const i=Math.max(0,Math.min(last.length-1,Math.round(cx/r.width*(last.length-1))));
-    selectSparkPoint(i);
+    if(!r.width)return;
+    const raw=e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX;
+    if(typeof raw!=='number'||isNaN(raw))return;
+    let i=Math.round((raw-r.left)/r.width*(last.length-1));
+    if(isNaN(i))return;
+    selectSparkPoint(Math.max(0,Math.min(last.length-1,i)));
   };
   svg.addEventListener('pointerdown',move);
   svg.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')move(e);});
-  selectSparkPoint(last.length-1);
+  sparkDefault();
 }
 
-let _spark=null;
-function selectSparkPoint(i){
+// Un appui hors de la carte remet la courbe à nu
+document.addEventListener('pointerdown',e=>{
+  const card=document.getElementById('sparkcard');
+  if(!card||!_spark)return;
+  if(!card.contains(e.target))sparkDefault();
+});
+
+// Résumé par défaut : dernier mois, sans marqueur sur la courbe
+function sparkDefault(){
   if(!_spark)return;
-  const{keys,vals,pts,W,H}=_spark;
-  const k=keys[i],v=vals[i],p=pts[i];
-  // Point + ligne repère
-  const dot=document.getElementById('sparkdot'),halo=document.getElementById('sparkhalo'),ln=document.getElementById('sparkline');
-  if(!dot)return;
-  dot.setAttribute('cx',p[0]);dot.setAttribute('cy',p[1]);
-  halo.setAttribute('cx',p[0]);halo.setAttribute('cy',p[1]);
-  ln.setAttribute('x1',p[0]);ln.setAttribute('x2',p[0]);ln.setAttribute('y1',p[1]);
-  // Valeur affichée en haut
+  const{keys,vals}=_spark;
+  const i=keys.length-1,k=keys[i],v=vals[i];
   document.getElementById('sparkval').textContent=fmk(v);
-  // % depuis le début de l'année du point sélectionné
-  const yr=k.split('-')[0];
-  const snaps=D.patrimoine.snapshots;
+  setSparkChip(k,v);
+  // Marqueurs et infobulle masqués tant qu'on n'a pas touché la courbe
+  ['sparkdot','sparkhalo','sparkline'].forEach(id=>{const e=document.getElementById(id);if(e)e.setAttribute('opacity','0');});
+  const tip=document.getElementById('sparktip');if(tip)tip.style.display='none';
+}
+
+// Badge : % depuis le premier mois de l'année du point
+function setSparkChip(k,v){
+  const yr=k.split('-')[0],snaps=D.patrimoine.snapshots;
   const yrKeys=Object.keys(snaps).filter(x=>x.startsWith(yr+'-')).sort();
   const chip=document.getElementById('sparkchip');
-  let refKey=yrKeys.length?yrKeys[0]:null;
+  const refKey=yrKeys.length?yrKeys[0]:null;
   if(refKey&&refKey!==k){
     const ref=ta(snaps[refKey]),diff=v-ref,pct=ref>0?(diff/ref*100):0,up=diff>=0;
     chip.textContent=(up?'+':'−')+Math.abs(pct).toFixed(1)+' % depuis '+MS[parseInt(refKey.split('-')[1])-1];
@@ -899,6 +908,23 @@ function selectSparkPoint(i){
     chip.textContent='début '+yr;
     chip.style.background='var(--bg2)';chip.style.color='var(--tx2)';
   }
+}
+
+let _spark=null;
+function selectSparkPoint(i){
+  if(!_spark)return;
+  const{keys,vals,pts,W,H}=_spark;
+  if(!Number.isInteger(i)||i<0||i>=keys.length||!pts[i])return;
+  const k=keys[i],v=vals[i],p=pts[i];
+  // Point + ligne repère
+  const dot=document.getElementById('sparkdot'),halo=document.getElementById('sparkhalo'),ln=document.getElementById('sparkline');
+  if(!dot)return;
+  dot.setAttribute('cx',p[0]);dot.setAttribute('cy',p[1]);dot.setAttribute('opacity','1');
+  halo.setAttribute('cx',p[0]);halo.setAttribute('cy',p[1]);halo.setAttribute('opacity','.25');
+  ln.setAttribute('x1',p[0]);ln.setAttribute('x2',p[0]);ln.setAttribute('y1',p[1]);ln.setAttribute('opacity','.45');
+  // Valeur affichée en haut
+  document.getElementById('sparkval').textContent=fmk(v);
+  setSparkChip(k,v);
   // Infobulle
   const tip=document.getElementById('sparktip');
   const prev=i>0?vals[i-1]:null;
