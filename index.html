@@ -8,17 +8,19 @@
 <meta name="apple-mobile-web-app-title" content="Budget Botto">
 <title>Budget Botto</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{
-  --bg1:#fff;--bg2:#f2f2f7;--bg3:#f2f2f7;
-  --tx1:#1c1c1e;--tx2:#8e8e93;
-  --bd1:#e5e5ea;--bd2:#c7c7cc;
-  --r1:12px;--r2:8px;
+  --bg1:#fff;--bg2:#f4f4f7;--bg3:#fafafc;
+  --tx1:#16161a;--tx2:#7c7e88;
+  --bd1:#e8e8ee;--bd2:#d3d3dc;
+  --acc:#6C5CE7;--acc2:#4B3FD4;--accsoft:rgba(108,92,231,.14);--accglow:rgba(108,92,231,.26);
+  --pos:#1D9E75;--neg:#D85A30;
+  --r1:15px;--r2:11px;
   --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 @media(prefers-color-scheme:dark){
-  :root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#000;--tx1:#fff;--tx2:#8e8e93;--bd1:#38383a;--bd2:#48484a;}
+  :root{--bg1:#1c1e26;--bg2:#232630;--bg3:#14151a;--tx1:#f5f5f7;--tx2:#8b8d98;--bd1:#2c2f3a;--bd2:#3a3e4b;
+        --accsoft:rgba(108,92,231,.18);--pos:#22C55E;--neg:#FB7185;}
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:pan-x pan-y}
 body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
@@ -144,6 +146,61 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .tslider:before{content:'';position:absolute;width:27px;height:27px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.3s}
 input:checked+.tslider{background:#1D9E75}
 input:checked+.tslider:before{transform:translateX(20px)}
+
+/* --- Carte héro --- */
+.hero{background:linear-gradient(145deg,var(--acc),var(--acc2));border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 8px 24px var(--accglow)}
+.hero-lbl{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.74);margin-bottom:5px}
+.hero-val{font-size:31px;font-weight:600;letter-spacing:-.02em;color:#fff}
+.hero-sub{font-size:11.5px;color:rgba(255,255,255,.76);margin-top:5px}
+/* --- Barre empilée --- */
+.stackbar{height:32px;border-radius:10px;overflow:hidden;display:flex;margin-bottom:16px;background:var(--bg2)}
+.stackbar i{display:block;height:100%;transition:width .35s ease}
+.hrow{margin-bottom:13px}
+.hrow:last-child{margin-bottom:0}
+.hhead{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.hname{font-size:12.5px;color:var(--tx1);flex:1}
+.hval{font-size:12.5px;font-weight:600;color:var(--tx1)}
+.hpc{font-size:10.5px;color:var(--tx2);width:36px;text-align:right}
+.htrack{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.htrack i{display:block;height:100%;border-radius:4px;transition:width .35s ease}
+/* --- Courbe évolution --- */
+.spark-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.spark-lbl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2);margin-bottom:4px}
+.spark-val{font-size:23px;font-weight:600;letter-spacing:-.02em;color:var(--tx1)}
+.spark-chip{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:8px}
+.spark-x{display:flex;justify-content:space-between;font-size:9.5px;color:var(--tx2);margin-top:8px}
+.mini-bars{display:flex;align-items:flex-end;gap:5px;height:64px}
+.mini-bars i{flex:1;border-radius:3px;min-height:2px;transition:height .35s ease}
+
+/* --- Donut patrimoine --- */
+.dwrap{position:relative;width:196px;margin:2px auto 14px}
+.dwrap svg{display:block;width:100%;height:auto;overflow:visible}
+.dctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dctr-v{font-size:18px;font-weight:600;letter-spacing:-.02em;color:var(--tx1)}
+.dctr-l{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx2);margin-top:3px}
+.plg{display:flex;align-items:center;gap:9px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd1)}
+.plg:last-child{border-bottom:none}
+.plg .nm{flex:1;color:var(--tx1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plg .pc{font-weight:600;color:var(--tx1)}
+.plg .am{color:var(--tx2);font-size:10.5px;min-width:56px;text-align:right}
+.plg .dt{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+
+/* --- Épargne livrets : objectif + calendrier --- */
+.ep-top{display:flex;align-items:baseline;gap:8px}
+.ep-big{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--tx1)}
+.ep-sm{font-size:10.5px;color:var(--tx2)}
+.gtrack{height:10px;border-radius:6px;background:var(--bg2);overflow:hidden;margin:9px 0 6px}
+.gtrack i{display:block;height:100%;border-radius:6px;transition:width .35s ease}
+.hm{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.hmc{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:relative}
+.hmc .mm{font-size:8.5px;opacity:.85}
+.hmc .vv{font-size:10.5px;font-weight:700}
+.hmc .ck{position:absolute;top:3px;right:4px;font-size:8.5px}
+.lgmini{display:flex;gap:11px;justify-content:center;margin-top:10px;font-size:9.5px;color:var(--tx2);flex-wrap:wrap}
+.lgmini span{display:flex;align-items:center;gap:4px}
+.lgmini i{width:9px;height:9px;border-radius:3px;display:block}
+.ep-proj{border-top:1px solid var(--bd1);margin-top:13px;padding-top:11px;font-size:12px;line-height:1.5;color:var(--tx2)}
+.ep-proj b{color:var(--tx1)}
 </style>
 </head>
 <body>
@@ -157,22 +214,24 @@ input:checked+.tslider:before{transform:translateX(20px)}
     </div>
     <div class="nb-banner hidden" id="nmb"></div>
     <div id="rob"></div>
+    <div class="hero">
+      <div class="hero-lbl">Solde du mois</div>
+      <div class="hero-val" id="tsol">0 €</div>
+      <div class="hero-sub" id="hsub"></div>
+    </div>
     <div class="sgrid">
       <div class="scard"><div class="slbl">Revenus</div><div class="sval g" id="trev">0 €</div></div>
       <div class="scard"><div class="slbl">Dépenses</div><div class="sval r" id="tdep">0 €</div></div>
-      <div class="scard"><div class="slbl">Solde</div><div class="sval" id="tsol">0 €</div></div>
-      <div class="scard"><div class="slbl">Épargne</div><div class="sval b" id="tepa">0 €</div></div>
+      <div class="scard" style="grid-column:span 2"><div class="slbl">Épargne du mois</div><div class="sval b" id="tepa">0 €</div></div>
     </div>
     <div id="bcats"></div>
     <div id="bact"></div>
     <!-- Graphique budget -->
     <div class="stl" style="margin-top:8px">Répartition du budget</div>
     <div class="chart-card">
-      <div style="position:relative;width:100%;height:220px">
-        <canvas id="budgetPie" role="img" aria-label="Répartition du budget mensuel">Répartition budget</canvas>
-      </div>
-      <div class="legend" id="bleg" style="justify-content:center;margin-top:12px"></div>
-      <div class="tot-row"><span style="color:var(--tx2)">Total dépenses</span><span style="font-weight:500;color:var(--tx1)" id="btot">0 €</span></div>
+      <div class="stackbar" id="bstack"></div>
+      <div id="bbars"></div>
+      <div class="tot-row"><span style="color:var(--tx2)">Total dépenses</span><span style="font-weight:600;color:var(--tx1)" id="btot">0 €</span></div>
     </div>
   </div>
 
@@ -180,10 +239,10 @@ input:checked+.tslider:before{transform:translateX(20px)}
   <div class="scr" id="scr-patrim">
     <div class="mhdr">
       <button class="mnav" onclick="chgPM(-1)"><i class="ti ti-chevron-left"></i></button>
-      <div class="mtitle" id="pmd" onclick="openCal()">Mai 2026 <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i></div>
+      <div style="display:flex;align-items:center;gap:8px"><div class="mtitle" id="pmd" onclick="openCal()">Mai 2026 <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i></div><button onclick="openPatrimSettings()" style="background:transparent;border:none;cursor:pointer;color:var(--tx2);font-size:20px;padding:4px"><i class="ti ti-settings"></i></button></div>
       <button class="mnav" onclick="chgPM(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
-    <div class="pt"><div class="ptl">Patrimoine net</div><div class="ptv" id="pnet">0 €</div><div class="pts" id="psub"></div></div>
+    <div class="hero"><div class="hero-lbl">Patrimoine net</div><div class="hero-val" id="pnet">0 €</div><div class="hero-sub" id="psub"></div></div>
     <div id="peb"></div>
     <div class="sgrid">
       <div class="scard"><div class="slbl">Comptes</div><div class="sval b" id="pcpt">0 €</div></div>
@@ -194,16 +253,26 @@ input:checked+.tslider:before{transform:translateX(20px)}
     <div id="snap-zone"></div>
     <div id="psecs"></div>
     <!-- Graphique patrimoine -->
+    <div class="stl" style="margin-top:8px">Évolution du patrimoine</div>
+    <div class="chart-card">
+      <div class="spark-head">
+        <div>
+          <div class="spark-lbl">Épargne + immobilier</div>
+          <div class="spark-val" id="sparkval">—</div>
+        </div>
+        <span class="spark-chip" id="sparkchip"></span>
+      </div>
+      <div id="sparkwrap"></div>
+      <div class="spark-x" id="sparkx"></div>
+    </div>
     <div class="stl" style="margin-top:8px">Répartition de l'épargne</div>
     <div class="chart-card">
-      <div style="position:relative;width:100%;height:220px">
-        <canvas id="patrimPie" role="img" aria-label="Répartition de l'épargne et immobilier">Répartition épargne</canvas>
-      </div>
-      <div class="legend" id="pleg" style="justify-content:center;margin-top:12px"></div>
-      <div class="tot-row"><span style="color:var(--tx2)">Total épargne + immo</span><span style="font-weight:500;color:var(--tx1)" id="ptot">0 €</span></div>
+      <div class="dwrap"><div id="pdonut"></div><div class="dctr"><div class="dctr-v" id="pdtot">—</div><div class="dctr-l">Total</div></div></div>
+      <div id="pleg"></div>
+      <div class="tot-row"><span style="color:var(--tx2)">Total épargne + immo</span><span style="font-weight:600;color:var(--tx1)" id="ptot">0 €</span></div>
     </div>
     <!-- Épargne mensuelle moyenne -->
-    <div class="stl" style="margin-top:8px">Épargne livrets — moyenne mensuelle</div>
+    <div class="stl" style="margin-top:8px">Épargne livrets</div>
     <div class="card" id="moy-card"></div>
   </div>
 
@@ -254,16 +323,27 @@ const CATS=[
   {key:'plaisirs',label:'Plaisirs & Autres',icon:'ti-confetti',bg:'#FBEAF0',col:'#993556',ac:'r',sign:'−',sd:true},
 ];
 
-const PI={
-  compte:{bg:'#E6F1FB',col:'#185FA5',ic:'ti-credit-card'},
-  livret:{bg:'#E1F5EE',col:'#0F6E56',ic:'ti-pig-money'},
-  pea:{bg:'#EEEDFE',col:'#534AB7',ic:'ti-chart-bar'},
-  av:{bg:'#FAEEDA',col:'#854F0B',ic:'ti-shield'},
-  ldd:{bg:'#E6F1FB',col:'#185FA5',ic:'ti-building-bank'},
-  immo:{bg:'#FAECE7',col:'#993C1D',ic:'ti-building'},
-  passif:{bg:'#FCEBEB',col:'#A32D2D',ic:'ti-receipt'}
+// Source unique : ces couleurs servent AUX ICÔNES ET AU GRAPHIQUE
+const PAT_COL={
+  pea:'#185FA5',      // bleu
+  livret:'#D4537E',   // rose
+  av:'#534AB7',       // violet
+  ldd:'#1D9E75',      // vert
+  immo:'#D85A30',     // orange
+  compte:'#7C8598',   // gris ardoise (hors graphique)
+  passif:'#A32D2D'    // rouge (hors graphique)
 };
-function piH(t){const i=PI[t]||{bg:'#F1EFE8',col:'#5F5E5A',ic:'ti-circle'};return`<div class="pi" style="background:${i.bg}"><i class="ti ${i.ic}" style="color:${i.col}"></i></div>`;}
+const PI={
+  compte:{col:PAT_COL.compte,ic:'ti-credit-card'},
+  livret:{col:PAT_COL.livret,ic:'ti-pig-money'},
+  pea:{col:PAT_COL.pea,ic:'ti-chart-bar'},
+  av:{col:PAT_COL.av,ic:'ti-shield'},
+  ldd:{col:PAT_COL.ldd,ic:'ti-building-bank'},
+  immo:{col:PAT_COL.immo,ic:'ti-building'},
+  passif:{col:PAT_COL.passif,ic:'ti-receipt'}
+};
+function softGrad(col){return`linear-gradient(145deg, ${col}38, ${col}14)`;}
+function piH(t){const i=PI[t]||{col:'#7C8598',ic:'ti-circle'};return`<div class="pi" style="background:${softGrad(i.col)};box-shadow:inset 0 0 0 1px ${i.col}26"><i class="ti ${i.ic}" style="color:${i.col}"></i></div>`;}
 
 function dsk(d){if(!d)return 9999;const p=d.split('/');if(p.length!==2)return 9999;return parseInt(p[1])*100+parseInt(p[0]);}
 function si(c,a){if(!c.sd)return a;return[...a].sort((x,y)=>dsk(x.date)-dsk(y.date));}
@@ -314,6 +394,7 @@ const DD=()=>({
     current:JSON.parse(JSON.stringify(buildSnaps()['2026-05'])),
     snapshots:buildSnaps(),drafts:{},editingMonth:'2026-05',
   },
+  objectifEpargne:200,
   nextId:500,
 });
 
@@ -325,6 +406,7 @@ function ld(){
     if(s){
       D=JSON.parse(s);
       // Migration snapshots manquants
+      if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;
       const b=buildSnaps();
       Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});
       // Mettre à jour editingMonth vers le dernier mois non snapshot
@@ -499,8 +581,6 @@ function creerMoisSuivant(){
 
 function tc(k){dismissBanner();const o=goc();if(o.has(k))o.delete(k);else o.add(k);renderB();}
 
-// Chart.js instances
-let bChart=null,pChart=null;
 
 function renderB(){
   const b=gcb(),isClosed=b&&b._closed,isNew=b&&b._isNew,readonly=isClosed;
@@ -520,6 +600,10 @@ function renderB(){
     document.getElementById('trev').textContent='—';document.getElementById('tdep').textContent='—';
     document.getElementById('tsol').textContent='—';document.getElementById('tepa').textContent='—';
     document.getElementById('bcats').innerHTML='';
+    document.getElementById('hsub').textContent='';
+    document.getElementById('bstack').innerHTML='';
+    document.getElementById('bbars').innerHTML='';
+    document.getElementById('btot').textContent='—';
     document.getElementById('bact').innerHTML=`<button class="creer-btn" onclick="creerMoisSuivant()"><i class="ti ti-plus"></i> Créer le budget de ${MN[cm]} ${cy}</button>`;
     return;
   }
@@ -534,7 +618,7 @@ function renderB(){
       const bc=tot>prev?'#D85A30':tot<prev?'#1D9E75':'#EF9F27';
       const sai=c.semaines.filter(s=>s.reel!==null).length;
       html+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('courses')">
-        <div class="ci" style="background:#FAEEDA"><i class="ti ti-shopping-cart" style="color:#854F0B"></i></div>
+        <div class="ci" style="background:${softGrad('#D98A1F')};box-shadow:inset 0 0 0 1px #D98A1F26"><i class="ti ti-shopping-cart" style="color:#D98A1F"></i></div>
         <div class="cn"><div class="ct">Courses</div><div class="cs">${sai}/4 semaines</div></div>
         <div class="cv r">−${fmt(tot)}</div>
         <i class="ti ti-chevron-down cc${op?' open':''}"></i>
@@ -557,7 +641,7 @@ function renderB(){
     const raw=b[cat.key]||[],its=si(cat,raw),tot=raw.reduce((a,x)=>a+x.montant,0);
     if(cat.key==='revenus')rv=tot;else if(cat.key==='epargne')ep=tot;else dp+=tot;
     html+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('${cat.key}')">
-      <div class="ci" style="background:${cat.bg}"><i class="ti ${cat.icon}" style="color:${cat.col}"></i></div>
+      <div class="ci" style="background:${softGrad(cat.col)};box-shadow:inset 0 0 0 1px ${cat.col}26"><i class="ti ${cat.icon}" style="color:${cat.col}"></i></div>
       <div class="cn"><div class="ct">${cat.label}</div><div class="cs">${its.length} ligne${its.length>1?'s':''}</div></div>
       <div class="cv ${cat.ac}">${cat.sign}${fmk(tot)}</div>
       <i class="ti ti-chevron-down cc${op?' open':''}"></i>
@@ -579,7 +663,8 @@ function renderB(){
   document.getElementById('tdep').textContent=fmk(dp);
   document.getElementById('tepa').textContent=fmk(ep);
   const se=document.getElementById('tsol');
-  se.textContent=(sol>=0?'+':'')+fmk(Math.abs(sol));se.className='sval '+(sol>=0?'g':'r');
+  se.textContent=(sol>=0?'+':'−')+fmk(Math.abs(sol));se.className='hero-val';
+  document.getElementById('hsub').textContent=`${fmk(rv)} entrées · ${fmk(dp)} sorties`;
 
   // Actions en bas
   let acts='';
@@ -587,25 +672,28 @@ function renderB(){
   if(!nextExists)acts+=`<button class="creer-btn" onclick="creerMoisSuivant()"><i class="ti ti-plus"></i> Créer le budget de ${MN[n.m]} ${n.y}</button>`;
   document.getElementById('bact').innerHTML=acts;
 
-  // Graphique budget
-   // Graphique budget
-   const charg=b.charges.reduce((a,x)=>a+x.montant,0)+(b._hideCourses?0:ct(b));
-   const abos=b.abonnements.reduce((a,x)=>a+x.montant,0);
-   const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
-   const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
-   const tot=charg+abos+epa+plais;
-   const BCOLS=['#1D9E75','#9B59B6','#185FA5','#D85A30'];
-   const BLBLS=['Charges & courses','Abonnements','Épargne','Plaisirs & Autres'];
-   const BVALS=[charg,abos,epa,plais];
-   document.getElementById('btot').textContent=fmk(tot);
-   const bleg=document.getElementById('bleg');
-   bleg.innerHTML=BLBLS.map((l,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${BCOLS[i]}"></span><span style="color:var(--tx2)">${l} <strong style="color:var(--tx1)">${tot>0?Math.round(BVALS[i]/tot*100):0}%</strong></span></span>`).join('');
-   if(bChart)bChart.destroy();
-   bChart=new Chart(document.getElementById('budgetPie'),{
-     type:'doughnut',
-     data:{labels:BLBLS,datasets:[{data:BVALS,backgroundColor:BCOLS,borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
-     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmk(v)} · ${p}%`;}}}}}
-   });
+  // Répartition du budget — barre empilée
+  const charg=b.charges.reduce((a,x)=>a+x.montant,0)+(b._hideCourses?0:ct(b));
+  const abos=b.abonnements.reduce((a,x)=>a+x.montant,0);
+  const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
+  const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
+  const tot=charg+abos+epa+plais;
+  const BCOLS=['#1D9E75','#9B59B6','#185FA5','#D85A30'];
+  const BLBLS=[b._hideCourses?'Charges fixes':'Charges & courses','Abonnements','Épargne','Plaisirs & Autres'];
+  const BVALS=[charg,abos,epa,plais];
+  document.getElementById('btot').textContent=fmk(tot);
+  // tri décroissant pour la lisibilité
+  const idx=BVALS.map((v,i)=>i).sort((a,z)=>BVALS[z]-BVALS[a]);
+  const pctOf=v=>tot>0?(v/tot*100):0;
+  document.getElementById('bstack').innerHTML=idx.filter(i=>BVALS[i]>0)
+    .map(i=>`<i style="width:${pctOf(BVALS[i])}%;background:${BCOLS[i]}"></i>`).join('');
+  document.getElementById('bbars').innerHTML=idx.map(i=>{
+    const p=pctOf(BVALS[i]);
+    return `<div class="hrow">
+      <div class="hhead"><span class="hname">${BLBLS[i]}</span><span class="hval">${fmk(BVALS[i])}</span><span class="hpc">${Math.round(p)} %</span></div>
+      <div class="htrack"><i style="width:${p}%;background:${BCOLS[i]}"></i></div>
+    </div>`;
+  }).join('');
 }
 
 function osE(i){
@@ -657,19 +745,20 @@ function renderP(){
   document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
   const res=gpd(),prev=gppd();
   if(!res){
-    document.getElementById('pnet').textContent='—';document.getElementById('pnet').className='ptv';
+    document.getElementById('pnet').textContent='—';document.getElementById('pnet').className='hero-val';
     document.getElementById('psub').textContent='Aucune donnée';
     document.getElementById('peb').innerHTML='';
     ['pcpt','pepa','pimm','ppas'].forEach(id=>document.getElementById(id).textContent='—');
     document.getElementById('snap-zone').innerHTML=`<button class="snap-btn" style="background:#185FA5" onclick="createDraft()"><i class="ti ti-plus"></i> Créer le patrimoine de ${MN[pm]} ${py}</button>`;
     document.getElementById('psecs').innerHTML='';
-    renderMoyenne();renderPatrimChart(null);return;
+    renderMoyenne();renderPatrimChart(null);renderSpark();return;
   }
   const snap=res.data,status=res.status,isEd=(status==='current'||status==='draft'),isSnap=(status==='snapshot');
   const tC=snap.comptes.reduce((a,x)=>a+x.valeur,0),tE=snap.epargne.reduce((a,x)=>a+x.valeur,0),tI=snap.immobilier.reduce((a,x)=>a+x.valeur,0),tP=snap.passifs.reduce((a,x)=>a+x.valeur,0),tA=tE+tI,net=tA-tP;
   document.getElementById('pcpt').textContent=fmk(tC);document.getElementById('pepa').textContent=fmk(tE);document.getElementById('pimm').textContent=fmk(tI);document.getElementById('ppas').textContent=fmk(tP);
   const pn=document.getElementById('pnet');
-  if(net<0){pn.textContent='−'+fmk(Math.abs(net));pn.className='ptv r';}else if(net>0){pn.textContent='+'+fmk(net);pn.className='ptv g';}else{pn.textContent='0 €';pn.className='ptv';}
+  pn.className='hero-val';
+  if(net<0)pn.textContent='−'+fmk(Math.abs(net));else if(net>0)pn.textContent='+'+fmk(net);else pn.textContent='0 €';
   document.getElementById('psub').textContent=`Actifs : ${fmk(tA)} · Passifs : ${fmk(tP)}`;
 
   // Bannières évolution
@@ -720,81 +809,268 @@ function renderP(){
   document.getElementById('psecs').innerHTML=ph;
 
   renderPatrimChart(snap);
+  renderSpark();
   renderMoyenne();
 }
 
-function renderPatrimChart(snap){
-  if(pChart){pChart.destroy();pChart=null;}
-  if(!snap){document.getElementById('pleg').innerHTML='';document.getElementById('ptot').textContent='—';return;}
-  const items=[
-    {label:'PEA',valeur:snap.epargne.find(x=>x.type==='pea')?.valeur||0,color:'#185FA5'},
-    {label:'Livret Jeune',valeur:snap.epargne.find(x=>x.type==='livret')?.valeur||0,color:'#D4537E'},
-    {label:'Assurance Vie',valeur:snap.epargne.find(x=>x.type==='av')?.valeur||0,color:'#534AB7'},
-    {label:'LDD',valeur:snap.epargne.find(x=>x.type==='ldd')?.valeur||0,color:'#1D9E75'},
-    ...snap.immobilier.map(x=>({label:x.nom,valeur:x.valeur,color:'#D85A30'})),
-  ].filter(x=>x.valeur>0);
-  const tot=items.reduce((a,x)=>a+x.valeur,0);
-  document.getElementById('ptot').textContent=fmt(tot);
-  document.getElementById('pleg').innerHTML=items.map(it=>`<span class="leg-item"><span class="leg-dot" style="background:${it.color}"></span><span style="color:var(--tx2)">${it.label} <strong style="color:var(--tx1)">${tot>0?Math.round(it.valeur/tot*100):0}%</strong></span></span>`).join('');
-  pChart=new Chart(document.getElementById('patrimPie'),{
-    type:'doughnut',
-    data:{labels:items.map(i=>i.label),datasets:[{data:items.map(i=>i.valeur),backgroundColor:items.map(i=>i.color),borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmt(v)} · ${p}%`;}}}}}
+
+// ---- Courbe d'évolution du patrimoine (12 derniers mois) ----
+function renderSpark(){
+  const snaps=D.patrimoine.snapshots;
+  const keys=Object.keys(snaps).sort().filter(k=>k<=sk(pm,py));
+  const last=keys.slice(-12);
+  const wrap=document.getElementById('sparkwrap');
+  const xEl=document.getElementById('sparkx');
+  const valEl=document.getElementById('sparkval');
+  const chipEl=document.getElementById('sparkchip');
+  if(last.length<2){
+    wrap.innerHTML='<div style="padding:20px 0;text-align:center;font-size:12px;color:var(--tx2)">Enregistre au moins deux mois pour voir la courbe.</div>';
+    xEl.innerHTML='';valEl.textContent='—';chipEl.textContent='';chipEl.style.background='transparent';
+    _spark=null;return;
+  }
+  const vals=last.map(k=>ta(snaps[k]));
+  // Géométrie
+  const W=300,H=110,PAD=8;
+  const mn=Math.min(...vals),mx=Math.max(...vals),span=(mx-mn)||1;
+  const pts=vals.map((v,i)=>{
+    const x=(i/(vals.length-1))*W;
+    const y=PAD+(1-(v-mn)/span)*(H-PAD*2-12);
+    return[x,y];
   });
+  const line=pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area=`${line} L${W},${H} L0,${H} Z`;
+  wrap.innerHTML=`<div style="position:relative">
+    <svg id="sparksvg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;touch-action:pan-y">
+      <defs><linearGradient id="sparkgrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6C5CE7" stop-opacity=".45"/>
+        <stop offset="100%" stop-color="#6C5CE7" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${area}" fill="url(#sparkgrad)"/>
+      <path d="${line}" fill="none" stroke="#8B7CF0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <line id="sparkline" x1="0" y1="0" x2="0" y2="${H}" stroke="#8B7CF0" stroke-width="1" stroke-dasharray="3 3" opacity=".45" vector-effect="non-scaling-stroke"/>
+      <circle id="sparkhalo" cx="0" cy="0" r="7" fill="#8B7CF0" opacity=".25"/>
+      <circle id="sparkdot" cx="0" cy="0" r="3.5" fill="#8B7CF0"/>
+    </svg>
+    <div id="sparktip" style="position:absolute;top:0;pointer-events:none;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--bd1);border-radius:9px;padding:6px 9px;font-size:11px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.28);display:none"></div>
+  </div>`;
+  // Repères X
+  const labelOf=k=>{const[y,m]=k.split('-');return MS[parseInt(m)-1]+' '+y.slice(2);};
+  const marks=[...new Set([0,Math.floor((last.length-1)/3),Math.floor((last.length-1)*2/3),last.length-1])];
+  xEl.innerHTML=marks.map(i=>`<span>${labelOf(last[i])}</span>`).join('');
+  // État partagé pour l'interaction
+  _spark={keys:last,vals,pts,W,H};
+  const svg=document.getElementById('sparksvg');
+  const move=e=>{
+    const r=svg.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const i=Math.max(0,Math.min(last.length-1,Math.round(cx/r.width*(last.length-1))));
+    selectSparkPoint(i);
+  };
+  svg.addEventListener('pointerdown',move);
+  svg.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')move(e);});
+  selectSparkPoint(last.length-1);
 }
 
-// État des accordéons moyennes par année
-const _moyOpen={};
-function toggleMoy(year){_moyOpen[year]=!_moyOpen[year];renderMoyenne();}
+let _spark=null;
+function selectSparkPoint(i){
+  if(!_spark)return;
+  const{keys,vals,pts,W,H}=_spark;
+  const k=keys[i],v=vals[i],p=pts[i];
+  // Point + ligne repère
+  const dot=document.getElementById('sparkdot'),halo=document.getElementById('sparkhalo'),ln=document.getElementById('sparkline');
+  if(!dot)return;
+  dot.setAttribute('cx',p[0]);dot.setAttribute('cy',p[1]);
+  halo.setAttribute('cx',p[0]);halo.setAttribute('cy',p[1]);
+  ln.setAttribute('x1',p[0]);ln.setAttribute('x2',p[0]);ln.setAttribute('y1',p[1]);
+  // Valeur affichée en haut
+  document.getElementById('sparkval').textContent=fmk(v);
+  // % depuis le début de l'année du point sélectionné
+  const yr=k.split('-')[0];
+  const snaps=D.patrimoine.snapshots;
+  const yrKeys=Object.keys(snaps).filter(x=>x.startsWith(yr+'-')).sort();
+  const chip=document.getElementById('sparkchip');
+  let refKey=yrKeys.length?yrKeys[0]:null;
+  if(refKey&&refKey!==k){
+    const ref=ta(snaps[refKey]),diff=v-ref,pct=ref>0?(diff/ref*100):0,up=diff>=0;
+    chip.textContent=(up?'+':'−')+Math.abs(pct).toFixed(1)+' % depuis '+MS[parseInt(refKey.split('-')[1])-1];
+    chip.style.background=up?'rgba(34,197,94,.14)':'rgba(216,90,48,.14)';
+    chip.style.color=up?'var(--pos)':'var(--neg)';
+  } else {
+    chip.textContent='début '+yr;
+    chip.style.background='var(--bg2)';chip.style.color='var(--tx2)';
+  }
+  // Infobulle
+  const tip=document.getElementById('sparktip');
+  const prev=i>0?vals[i-1]:null;
+  let sub='';
+  if(prev!==null){const d=v-prev,u=d>=0;sub=`<span style="color:${u?'var(--pos)':'var(--neg)'}"> ${u?'+':'−'}${fmk(Math.abs(d))}</span> vs mois préc.`;}
+  tip.innerHTML=`<strong style="color:var(--tx1)">${MN[parseInt(k.split('-')[1])-1]} ${k.split('-')[0]}</strong> · <span style="color:var(--tx1)">${fmk(v)}</span><div style="color:var(--tx2);margin-top:2px">${sub||'premier point'}</div>`;
+  tip.style.display='block';
+  const leftPct=(p[0]/W)*100;
+  tip.style.left=Math.max(16,Math.min(84,leftPct))+'%';
+  tip.style.top=Math.max(0,p[1]-46)+'px';
+}
 
+function renderPatrimChart(snap){
+  const wrap=document.getElementById('pdonut');
+  const leg=document.getElementById('pleg');
+  const totEl=document.getElementById('ptot'),dtotEl=document.getElementById('pdtot');
+  if(!snap){wrap.innerHTML='';leg.innerHTML='';totEl.textContent='—';dtotEl.textContent='—';return;}
+
+  // Teinte plus claire pour le haut du dégradé
+  function lighten(hex,amt){
+    const n=parseInt(hex.slice(1),16);
+    const r=Math.min(255,((n>>16)&255)+amt),g=Math.min(255,((n>>8)&255)+amt),b=Math.min(255,(n&255)+amt);
+    return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+  }
+  const items=[
+    ...snap.epargne.map(x=>({nm:x.nom,v:x.valeur,c:PAT_COL[x.type]||'#7C8598'})),
+    ...snap.immobilier.map(x=>({nm:x.nom,v:x.valeur,c:PAT_COL[x.type]||PAT_COL.immo})),
+  ].filter(x=>x.v>0);
+  const tot=items.reduce((a,x)=>a+x.v,0);
+  totEl.textContent=fmt(tot);
+  dtotEl.textContent=fmk(tot);
+  if(!items.length){wrap.innerHTML='';leg.innerHTML='<div style="padding:14px 0;text-align:center;font-size:12px;color:var(--tx2)">Aucune épargne saisie.</div>';return;}
+
+  // Thème : rail et intensité de lueur adaptés
+  const dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const railCol=dark?'#232630':'#eef0f5';
+  const blur=dark?2:1.2;
+
+  const rO=87,rI=65,gap=3.5,railR=(rO+rI)/2,railW=rO-rI+4;
+  function polar(cx,cy,r,d){const a=(d-90)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+  function arcP(rOu,rIn,s,e){
+    if(e-s>=359.99)e=s+359.99;
+    const[x1,y1]=polar(100,100,rOu,s),[x2,y2]=polar(100,100,rOu,e);
+    const lg=(e-s)>180?1:0;
+    const[x3,y3]=polar(100,100,rIn,e),[x4,y4]=polar(100,100,rIn,s);
+    return`M${x1.toFixed(2)},${y1.toFixed(2)} A${rOu},${rOu} 0 ${lg} 1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${rIn},${rIn} 0 ${lg} 0 ${x4.toFixed(2)},${y4.toFixed(2)} Z`;
+  }
+  let ang=0;const paths=[],defs=[];
+  items.forEach((it,i)=>{
+    const sw=(it.v/tot)*360;
+    const s=ang+gap/2,e=Math.max(ang+sw-gap/2,ang+gap/2+.4);
+    defs.push(`<linearGradient id="pdg${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${lighten(it.c,38)}"/><stop offset="100%" stop-color="${it.c}"/></linearGradient>`);
+    paths.push(`<path d="${arcP(rO,rI,s,e)}" fill="url(#pdg${i})"/>`);
+    ang+=sw;
+  });
+  wrap.innerHTML=`<svg viewBox="0 0 200 200" role="img" aria-label="Répartition de l'épargne">
+    <defs>${defs.join('')}
+      <filter id="pdglow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="${blur}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <circle cx="100" cy="100" r="${railR}" fill="none" stroke="${railCol}" stroke-width="${railW}"/>
+    <g filter="url(#pdglow)">${paths.join('')}</g>
+  </svg>`;
+  leg.innerHTML=items.map(it=>`<div class="plg">
+    <span class="dt" style="background:${it.c}"></span>
+    <span class="nm">${it.nm}</span>
+    <span class="pc">${Math.round(it.v/tot*100)} %</span>
+    <span class="am">${fmk(it.v)}</span>
+  </div>`).join('');
+}
+// Re-rendu si le téléphone bascule clair/sombre
+if(window.matchMedia){
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  const onTheme=()=>{try{renderP();}catch(e){}};
+  if(mq.addEventListener)mq.addEventListener('change',onTheme);else if(mq.addListener)mq.addListener(onTheme);
+}
+
+// ---- Paramètres patrimoine : objectif d'épargne mensuel ----
+function openPatrimSettings(){
+  const cur=D.objectifEpargne||0;
+  openOv('Paramètres patrimoine',`
+    <div class="fg"><label class="fl">Objectif d'épargne mensuel (€)</label>
+      <input class="fi" id="fobj" type="number" step="10" min="0" value="${cur}" inputmode="decimal" style="font-size:20px;text-align:center;font-weight:600">
+    </div>
+    <div style="font-size:11.5px;color:var(--tx2);line-height:1.55;margin-bottom:14px">
+      Montant que tu vises chaque mois sur tes livrets (Livret Jeune + LDD).
+      Il sert à colorer le calendrier et à projeter ton solde de fin d'année.
+    </div>
+    <button class="sbtn" onclick="saveObjectif()">Enregistrer</button>
+  `,null);
+  setTimeout(()=>{const e=document.getElementById('fobj');if(e){e.focus();e.select();}},150);
+}
+function saveObjectif(){
+  const v=parseFloat(document.getElementById('fobj').value);
+  D.objectifEpargne=isNaN(v)||v<0?0:v;
+  sv();closeOv();renderP();
+}
+
+// ---- Épargne livrets : objectif + calendrier coloré + projection ----
 function renderMoyenne(){
-  const allSnaps=D.patrimoine.snapshots;
-  const allKeys=Object.keys(allSnaps).sort();
-  const fmtD=n=>{const r=Math.round(n);return(r>=0?'+':'')+r.toLocaleString('fr-FR')+' €';};
-  function livretTotal(k){const s=allSnaps[k];if(!s)return null;return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);}
-  function calcDeltas(year){
-    const ks=allKeys.filter(k=>k.startsWith(year+'-'));
-    const result=[];
-    for(let i=0;i<ks.length;i++){
-      const k=ks[i],idx=allKeys.indexOf(k);if(idx<=0)continue;
-      const pk=allKeys[idx-1],cur=livretTotal(k),prev=livretTotal(pk);
-      if(cur===null||prev===null)continue;
-      const[,m]=k.split('-');
-      result.push({month:MN[parseInt(m)-1],delta:cur-prev});
-    }
-    return result;
+  const box=document.getElementById('moy-card');
+  const snaps=D.patrimoine.snapshots;
+  const allKeys=Object.keys(snaps).sort();
+  const lv=k=>{const s=snaps[k];if(!s)return null;
+    return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);};
+  const year=py;
+  // Deltas de l'année affichée, jusqu'au mois affiché
+  const curKey=sk(pm,py);
+  const yKeys=allKeys.filter(k=>k.startsWith(year+'-')&&k<=curKey);
+  const deltas=[];
+  yKeys.forEach(k=>{
+    const i=allKeys.indexOf(k);if(i<=0)return;
+    const cur=lv(k),prev=lv(allKeys[i-1]);
+    if(cur===null||prev===null)return;
+    deltas.push({key:k,m:MS[parseInt(k.split('-')[1])-1],d:cur-prev});
+  });
+  if(!deltas.length){
+    box.innerHTML=`<div style="padding:18px 15px;text-align:center;font-size:12px;color:var(--tx2)">
+      Enregistre au moins deux mois de patrimoine pour suivre ton épargne.</div>`;
+    return;
   }
-  function renderYear(deltas,year,label,isCurrentYear){
-    if(!deltas.length)return'';
-    const total=deltas.reduce((a,d)=>a+d.delta,0),moy=total/deltas.length;
-    const moyCol=moy>=0?'#1D9E75':'#D85A30',totCol=total>=0?'#185FA5':'#D85A30';
-    // Année en cours : ouverte par défaut ; années passées : fermées par défaut
-    if(_moyOpen[year]===undefined)_moyOpen[year]=isCurrentYear;
-    const isOpen=_moyOpen[year];
-    const chevron=`<i class="ti ti-chevron-down" style="font-size:16px;color:var(--tx2);transition:transform .2s;transform:rotate(${isOpen?'180':'0'}deg)"></i>`;
-    let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:13px;cursor:pointer;border-bottom:.5px solid var(--bd1)" onclick="toggleMoy(${year})">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div>
-        <div><div style="font-size:14px;font-weight:500;color:var(--tx1)">Livrets ${year}</div>
-        <div style="font-size:11px;color:var(--tx2)">Livret Jeune + LDD</div></div>
-      </div>
-      ${chevron}
-    </div>`;
-    if(isOpen){
-      h+=`<div class="pr"><div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div><div class="pn"><div class="pa">Moyenne mensuelle</div><div class="pb">Livret Jeune + LDD · ${year}</div></div><div class="pv" style="color:${moyCol};font-weight:500">${fmtD(moy)}</div></div>`;
-      h+=`<div class="pr"><div class="pi" style="background:#E6F1FB"><i class="ti ti-trending-up" style="color:#185FA5"></i></div><div class="pn"><div class="pa">Total épargné</div><div class="pb">${label}</div></div><div class="pv" style="color:${totCol};font-weight:500">${fmtD(total)}</div></div>`;
-      deltas.forEach(d=>{const c=d.delta>0?'#1D9E75':d.delta<0?'#D85A30':'var(--tx2)';h+=`<div class="pr" style="border-bottom:.5px solid var(--bd1)"><div class="pn"><div class="pa" style="font-size:12px;color:var(--tx2)">${d.month}</div></div><div class="pv" style="color:${c};font-size:13px">${fmtD(d.delta)}</div></div>`;});
-    }
-    return h;
+  const OBJ=D.objectifEpargne||0;
+  const tot=deltas.reduce((a,x)=>a+x.d,0);
+  const moy=tot/deltas.length;
+  const cur=deltas[deltas.length-1];
+  const atteints=OBJ>0?deltas.filter(x=>x.d>=OBJ).length:0;
+  const solde=lv(curKey)!==null?lv(curKey):lv(yKeys[yKeys.length-1]);
+  const reste=Math.max(0,12-deltas.length);
+  const proj=solde+moy*reste;
+  const fD=n=>(n>=0?'+':'−')+Math.abs(Math.round(n)).toLocaleString('fr-FR')+' €';
+
+  function cellCol(d){
+    if(d<0)return{bg:'rgba(251,113,133,.55)',tx:'#fff'};
+    if(d===0)return{bg:'var(--bg2)',tx:'var(--tx2)'};
+    if(OBJ<=0)return{bg:'rgba(34,197,94,.5)',tx:'#fff'};
+    const r=Math.min(1,d/OBJ);
+    return{bg:`rgba(34,197,94,${(0.16+r*0.64).toFixed(2)})`,tx:'#fff'};
   }
-  const mcard=document.getElementById('moy-card');
-  const curYear=py,prevYear=curYear-1;
-  const dCur=calcDeltas(curYear),dPrev=calcDeltas(prevYear);
-  if(!dCur.length&&!dPrev.length){mcard.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--tx2)">Pas assez de données.</div>';return;}
-  let h='';
-  if(dPrev.length)h+=renderYear(dPrev,prevYear,'sur '+prevYear,false);
-  h+=renderYear(dCur,curYear,'depuis jan. '+curYear,true);
-  mcard.innerHTML=h;
+  const cells=deltas.map(x=>{
+    const c=cellCol(x.d);
+    return`<div class="hmc" style="background:${c.bg}">
+      ${OBJ>0&&x.d>=OBJ?`<span class="ck" style="color:${c.tx}">✓</span>`:''}
+      <span class="mm" style="color:${c.tx}">${x.m}</span>
+      <span class="vv" style="color:${c.tx}">${x.d===0?'—':fD(x.d).replace(' €','')}</span>
+    </div>`;}).join('');
+
+  let head;
+  if(OBJ>0){
+    const p=Math.min(100,Math.max(0,cur.d/OBJ*100));
+    head=`<div class="ep-top"><span class="ep-big ${cur.d>=0?'g':'r'}">${fmk(cur.d)}</span>
+      <span class="ep-sm">sur ${fmk(OBJ)} visés en ${MN[parseInt(cur.key.split('-')[1])-1].toLowerCase()}</span></div>
+      <div class="gtrack"><i style="width:${p}%;background:linear-gradient(90deg,#1D9E75,#22C55E)"></i></div>
+      <div class="ep-sm" style="margin-bottom:14px"><b style="color:var(--tx1)">${atteints} mois sur ${deltas.length}</b> ont atteint l'objectif cette année</div>`;
+  } else {
+    head=`<div class="ep-top"><span class="ep-big ${moy>=0?'g':'r'}">${fD(moy)}</span>
+      <span class="ep-sm">par mois en moyenne</span></div>
+      <div class="ep-sm" style="margin:6px 0 14px">${fmk(tot)} mis de côté cette année ·
+      <span onclick="openPatrimSettings()" style="color:var(--acc);cursor:pointer">définir un objectif</span></div>`;
+  }
+  const legend=OBJ>0?`<div class="lgmini">
+      <span><i style="background:rgba(34,197,94,.8)"></i>objectif atteint</span>
+      <span><i style="background:rgba(34,197,94,.28)"></i>partiel</span>
+      <span><i style="background:rgba(251,113,133,.55)"></i>retrait</span></div>`:'';
+
+  box.innerHTML=`<div style="padding:15px">
+    ${head}
+    <div class="hm">${cells}</div>
+    ${legend}
+    <div class="ep-proj">Au rythme de <b>${fD(moy)}</b>/mois, tes livrets atteindront
+      <b>${fmk(proj)}</b> fin décembre ${year}.</div>
+  </div>`;
 }
 
 function renderH(){
