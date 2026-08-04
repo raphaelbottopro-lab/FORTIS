@@ -203,6 +203,24 @@ input:checked+.tslider:before{transform:translateX(20px)}
 .lgmini i{width:9px;height:9px;border-radius:3px;display:block}
 .ep-proj{border-top:1px solid var(--bd1);margin-top:13px;padding-top:11px;font-size:12px;line-height:1.5;color:var(--tx2)}
 .ep-proj b{color:var(--tx1)}
+
+/* --- Module Bricks --- */
+.subpage{display:none;padding:14px}
+.subpage.on{display:block}
+.snav{display:flex;align-items:center;gap:8px;margin-bottom:13px}
+.snav .bk{color:var(--acc);font-size:22px;background:none;border:none;padding:2px;font-family:inherit}
+.snav .ttl{flex:1;font-size:16px;font-weight:600;color:var(--tx1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warnbox{background:rgba(224,163,46,.12);border-radius:11px;padding:10px 12px;font-size:11.5px;color:#B5822A;line-height:1.55;display:flex;gap:8px;margin-bottom:11px}
+.warnbox b{color:#B5822A}
+.infobox{background:var(--accsoft);border-radius:11px;padding:10px 12px;font-size:11.5px;color:var(--acc);line-height:1.55;display:flex;gap:8px;margin:2px 0 12px}
+@media(prefers-color-scheme:dark){.warnbox{color:#E0A32E}.warnbox b{color:#E0A32E}.infobox{color:#A99BF5}}
+.yh{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);padding:9px 13px;background:var(--bg2)}
+.dvbars{display:flex;align-items:flex-end;gap:3px;height:52px;padding:0 2px}
+.dvbars i{flex:1;border-radius:2px;min-height:3px}
+.dvx{display:flex;justify-content:space-between;font-size:9px;color:var(--tx2);margin-top:6px}
+.chk{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--tx1);margin-bottom:12px}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.mv-empty{padding:22px 15px;text-align:center;font-size:12px;color:var(--tx2);line-height:1.6}
 </style>
 </head>
 <body>
@@ -290,6 +308,39 @@ input:checked+.tslider:before{transform:translateX(20px)}
   </div>
 </div>
 
+<!-- SOUS-PAGE BRICKS -->
+<div class="subpage" id="scr-bricks">
+  <div class="snav">
+    <button class="bk" onclick="closeBricks()"><i class="ti ti-chevron-left"></i></button>
+    <span class="ttl" id="bkTitle">Projet</span>
+    <button class="bk" style="color:var(--tx2);font-size:19px" onclick="openBricksMenu()"><i class="ti ti-dots"></i></button>
+  </div>
+  <div class="hero">
+    <div class="hero-lbl">Exposition totale</div>
+    <div class="hero-val" id="bkTot">0 €</div>
+    <div class="hero-sub" id="bkSub"></div>
+  </div>
+  <div id="bkWarn"></div>
+  <div class="sgrid">
+    <div class="scard"><div class="slbl">Revenus perçus</div><div class="sval g" id="bkDiv">0 €</div></div>
+    <div class="scard"><div class="slbl">Rendement annuel</div><div class="sval g" id="bkRdt">—</div></div>
+  </div>
+  <div class="chart-card" id="bkRepCard">
+    <div class="stackbar" id="bkStack"></div>
+    <div class="legend" id="bkLeg"></div>
+  </div>
+  <div class="stl">Dividendes par mois</div>
+  <div class="chart-card" id="bkChartCard">
+    <div class="dvbars" id="bkBars"></div>
+    <div class="dvx" id="bkBx"></div>
+  </div>
+  <div class="stl" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Mouvements</span><span class="mut" id="bkCount" style="text-transform:none;letter-spacing:0"></span>
+  </div>
+  <div class="card" id="bkJournal"></div>
+  <button class="creer-btn" style="margin-top:10px" onclick="openMvForm()"><i class="ti ti-plus"></i> Ajouter un mouvement</button>
+</div>
+
 <div class="nav">
   <button class="nb on" onclick="go('budget')" id="tnb-budget"><i class="ti ti-wallet"></i>Budget</button>
   <button class="nb" onclick="go('patrim')" id="tnb-patrim"><i class="ti ti-chart-line"></i>Patrimoine</button>
@@ -332,6 +383,7 @@ const PAT_COL={
   av:'#534AB7',       // violet
   ldd:'#1D9E75',      // vert
   immo:'#D85A30',     // orange
+  bricks:'#E0A32E',   // solde disponible Bricks (ambre)
   compte:'#7C8598',   // gris ardoise (hors graphique)
   passif:'#A32D2D'    // rouge (hors graphique)
 };
@@ -342,6 +394,7 @@ const PI={
   av:{col:PAT_COL.av,ic:'ti-shield'},
   ldd:{col:PAT_COL.ldd,ic:'ti-building-bank'},
   immo:{col:PAT_COL.immo,ic:'ti-building'},
+  bricks:{col:PAT_COL.bricks,ic:'ti-wallet'},
   passif:{col:PAT_COL.passif,ic:'ti-receipt'}
 };
 function softGrad(col){return`linear-gradient(145deg, ${col}38, ${col}14)`;}
@@ -397,6 +450,7 @@ const DD=()=>({
     snapshots:buildSnaps(),drafts:{},editingMonth:'2026-05',
   },
   objectifEpargne:200,
+  bricks:{mouvements:[]},
   nextId:500,
 });
 
@@ -409,6 +463,7 @@ function ld(){
       D=JSON.parse(s);
       // Migration snapshots manquants
       if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;
+      if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};
       const b=buildSnaps();
       Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});
       // Mettre à jour editingMonth vers le dernier mois non snapshot
@@ -797,9 +852,11 @@ function renderP(){
     items.forEach(item=>{
       let ev='';
       if(prev&&!isp){const a=prev[sec]||[],p=a.find(x=>x.id===item.id);if(p){const df=item.valeur-p.valeur;if(Math.abs(df)>0.5){const sg=df>0?'+':'';const ec=df>0?'#1D9E75':'#D85A30';ev=`<span class="pe" style="color:${ec}">${sg}${fmk(df)}</span>`;}}}
-      h+=`<div class="pr">${piH(item.type)}<div class="pn"><div class="pa">${item.nom}</div><div class="pb">${item.banque}</div></div>
+      const clic=isBricksLine(item)?` onclick="openBricks(${item.id})" style="cursor:pointer"`:'';
+      h+=`<div class="pr"${clic}>${piH(item.type)}<div class="pn"><div class="pa">${item.nom}</div><div class="pb">${item.banque}</div></div>
         <div style="text-align:right"><div class="pv ${cls}">${isp?'−':''}${fmt(item.valeur)}</div>${ev}</div>
-        ${isEd?`<button class="rb" onclick="oEP('${sec}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
+        ${isEd?`<button class="rb" onclick="event.stopPropagation();oEP('${sec}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
+        ${isBricksLine(item)?`<i class="ti ti-chevron-right" style="color:var(--acc);font-size:16px"></i>`:''}
       </div>`;
     });
     if(isEd)h+=`<button class="ab" onclick="oAP('${sec}')"><i class="ti ti-plus"></i>Ajouter</button>`;
@@ -1101,6 +1158,326 @@ function renderMoyenne(){
   </div>`;
 }
 
+
+// ============ MODULE BRICKS ============
+let bkLineId=null;          // id de la ligne "capital" ouverte
+const MSHORT=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+function isBricksLine(x){return x.type==='immo'&&/bricks|witz|wiltz/i.test((x.nom||'')+' '+(x.banque||''));}
+function bkSoldeLine(data){return (data.immobilier||[]).find(x=>x.type==='bricks')||null;}
+function bkCapLine(data){return (data.immobilier||[]).find(x=>x.id===bkLineId)||null;}
+
+function openBricks(id){
+  bkLineId=id;
+  document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.getElementById('scr-bricks').classList.add('on');
+  try{window.scrollTo(0,0);}catch(e){}
+  renderBricks();
+}
+function closeBricks(){
+  document.getElementById('scr-bricks').classList.remove('on');
+  document.getElementById('scr-patrim').classList.add('on');
+  bkLineId=null;renderP();
+}
+
+// Mouvements triés du plus récent au plus ancien
+function bkMvs(){return (D.bricks.mouvements||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));}
+function bkTotalDiv(){return (D.bricks.mouvements||[]).filter(m=>m.type==='div').reduce((a,m)=>a+m.montant,0);}
+
+function renderBricks(){
+  const res=gpd();if(!res){closeBricks();return;}
+  const data=res.data,ro=(res.status==='snapshot');
+  const cap=bkCapLine(data),sol=bkSoldeLine(data);
+  if(!cap){closeBricks();return;}
+  const vCap=cap.valeur,vSol=sol?sol.valeur:0,tot=vCap+vSol;
+
+  document.getElementById('bkTitle').textContent=cap.nom;
+  document.getElementById('bkTot').textContent=fmt(tot);
+  document.getElementById('bkSub').textContent=`${fmt(vCap)} de capital · ${fmt(vSol)} disponibles`;
+
+  // Bandeau : lecture seule si mois figé, sinon rappel du solde saisi à la main
+  document.getElementById('bkWarn').innerHTML = ro
+    ? `<div class="warnbox"><i class="ti ti-lock" style="font-size:15px;flex-shrink:0"></i><div>Mois figé — les montants affichés sont ceux du ${MN[pm].toLowerCase()} ${py}.</div></div>`
+    : (sol?'':`<div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i><div>Ajoute une ligne <b>Solde Bricks</b> dans Immobilier pour suivre tes dividendes disponibles séparément du capital.</div></div>`);
+
+  // Revenus perçus + rendement annualisé
+  const totDiv=bkTotalDiv();
+  document.getElementById('bkDiv').textContent=(totDiv>0?'+':'')+fmt(totDiv);
+  const achat=(D.bricks.mouvements||[]).filter(m=>m.type==='achat').sort((a,b)=>a.date.localeCompare(b.date))[0];
+  let rdt='—';
+  if(achat&&achat.montant>0){
+    const d0=new Date(achat.date),d1=new Date();
+    const mois=Math.max(1,(d1.getFullYear()-d0.getFullYear())*12+(d1.getMonth()-d0.getMonth()));
+    rdt=(totDiv/achat.montant*100*12/mois).toFixed(1)+' %';
+  }
+  document.getElementById('bkRdt').textContent=rdt;
+
+  // Répartition capital / solde
+  const rep=document.getElementById('bkRepCard');
+  if(tot>0){
+    rep.style.display='';
+    const pc=v=>(v/tot*100);
+    document.getElementById('bkStack').innerHTML=
+      `<i style="width:${pc(vCap)}%;background:${PAT_COL.immo}"></i><i style="width:${pc(vSol)}%;background:${PAT_COL.bricks}"></i>`;
+    document.getElementById('bkLeg').innerHTML=
+      `<span class="leg-item"><span class="leg-dot" style="background:${PAT_COL.immo}"></span><span style="color:var(--tx2)">Capital investi <strong style="color:var(--tx1)">${fmt(vCap)}</strong></span></span>
+       <span class="leg-item"><span class="leg-dot" style="background:${PAT_COL.bricks}"></span><span style="color:var(--tx2)">Disponible <strong style="color:var(--tx1)">${fmt(vSol)}</strong></span></span>`;
+  } else rep.style.display='none';
+
+  renderBkChart();
+  renderBkJournal(ro);
+}
+
+// Histogramme des dividendes, mois par mois, creux inclus
+function renderBkChart(){
+  const divs=(D.bricks.mouvements||[]).filter(m=>m.type==='div');
+  const card=document.getElementById('bkChartCard');
+  if(divs.length<2){card.style.display='none';return;}
+  card.style.display='';
+  const keys=divs.map(m=>m.date.slice(0,7)).sort();
+  const first=keys[0],last=keys[keys.length-1];
+  const par={};divs.forEach(m=>{const k=m.date.slice(0,7);par[k]=(par[k]||0)+m.montant;});
+  // Série continue du premier au dernier mois
+  let[y,mo]=first.split('-').map(Number);const[ly,lm]=last.split('-').map(Number);
+  const serie=[];
+  while(y<ly||(y===ly&&mo<=lm)){
+    const k=y+'-'+String(mo).padStart(2,'0');
+    serie.push({k,v:par[k]||0});
+    mo++;if(mo>12){mo=1;y++;}
+  }
+  const mx=Math.max(...serie.map(s=>s.v))||1;
+  const moy=serie.filter(s=>s.v>0).reduce((a,s)=>a+s.v,0)/Math.max(1,serie.filter(s=>s.v>0).length);
+  document.getElementById('bkBars').innerHTML=serie.map(s=>{
+    if(s.v===0)return `<i style="height:6%;background:rgba(216,90,48,.45)" title="${s.k} · aucun versement"></i>`;
+    const col=s.v>moy*1.5?'#22C55E':'rgba(34,197,94,.55)';
+    return `<i style="height:${Math.max(8,s.v/mx*100)}%;background:${col}" title="${s.k} · ${fmt(s.v)}"></i>`;
+  }).join('');
+  const lbl=k=>{const[a,b]=k.split('-');return MSHORT[+b-1]+' '+a.slice(2);};
+  document.getElementById('bkBx').innerHTML=`<span>${lbl(first)}</span><span>${lbl(last)}</span>`;
+}
+
+const MV_META={
+  div:   {ic:'ti-coin',            col:'#1D9E75', lbl:'Dividende',              sign:'+'},
+  retrait:{ic:'ti-arrow-down-right',col:'#D85A30', lbl:'Retrait vers ma banque', sign:'−'},
+  remb:  {ic:'ti-transfer-in',     col:'#6C5CE7', lbl:'Remboursement de capital',sign:'+'},
+  achat: {ic:'ti-shopping-bag',    col:'#D85A30', lbl:'Investissement',         sign:''},
+};
+
+function renderBkJournal(ro){
+  const mvs=bkMvs();
+  document.getElementById('bkCount').textContent=mvs.length?mvs.length+' mouvement'+(mvs.length>1?'s':''):'';
+  const box=document.getElementById('bkJournal');
+  if(!mvs.length){
+    box.innerHTML=`<div class="mv-empty">Aucun mouvement enregistré.<br>Ajoute tes dividendes et tes retraits pour suivre le rendement du projet.</div>`;
+    return;
+  }
+  let h='',curY=null;
+  mvs.forEach(m=>{
+    const y=m.date.slice(0,4);
+    if(y!==curY){
+      curY=y;
+      const dy=(D.bricks.mouvements||[]).filter(x=>x.type==='div'&&x.date.startsWith(y)).reduce((a,x)=>a+x.montant,0);
+      h+=`<div class="yh">${y}${dy?' · +'+fmt(dy)+' perçus':''}</div>`;
+    }
+    const me=MV_META[m.type]||MV_META.div;
+    const[Y,Mo,Da]=m.date.split('-');
+    h+=`<div class="pr" onclick="openMvForm(${m.id})">
+      <div class="pi" style="background:${softGrad(me.col)};box-shadow:inset 0 0 0 1px ${me.col}26"><i class="ti ${me.ic}" style="color:${me.col}"></i></div>
+      <div class="pn"><div class="pa">${me.lbl}${m.note?' <span class="mut">· '+m.note+'</span>':''}</div>
+        <div class="pb">${Da}/${Mo}/${Y}</div></div>
+      <div class="pv" style="color:${m.type==='retrait'?'var(--neg)':m.type==='achat'?'var(--tx1)':me.col}">${me.sign}${fmt(m.montant)}</div>
+    </div>`;
+  });
+  box.innerHTML=h;
+}
+
+// ---- Formulaire de mouvement ----
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function moisAffiche(){return sk(pm,py);}
+
+function openMvForm(id){
+  const ex=id!=null?(D.bricks.mouvements||[]).find(m=>m.id===id):null;
+  const t=ex?ex.type:'div';
+  const body=`
+    <div class="fg"><label class="fl">Nature du mouvement</label>
+      <div class="chips" id="mvTypes">
+        ${Object.entries(MV_META).map(([k,v])=>`<div class="chip${t===k?' on':''}" onclick="selChip(this);mvRefresh()" data-mv="${k}">${v.lbl.replace(' vers ma banque','')}</div>`).join('')}
+      </div>
+    </div>
+    <div class="f2" style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="mvDate" type="date" value="${ex?ex.date:todayISO()}" onchange="mvRefresh()"></div>
+      <div class="fg"><label class="fl">Montant (€)</label><input class="fi" id="mvMt" type="number" step="0.01" inputmode="decimal" value="${ex?ex.montant:''}" placeholder="0.00" oninput="mvRefresh()"></div>
+    </div>
+    <div class="fg"><label class="fl">Note (facultatif)</label><input class="fi" id="mvNote" value="${ex&&ex.note?ex.note:''}" placeholder="Ex : rattrapage"></div>
+    <div id="mvImpact"></div>
+    <button class="sbtn" onclick="saveMv(${ex?ex.id:'null'})">Enregistrer</button>`;
+  openOv(ex?'Modifier le mouvement':'Nouveau mouvement',body,
+    ex?()=>{D.bricks.mouvements=D.bricks.mouvements.filter(m=>m.id!==ex.id);sv();renderBricks();}:null);
+  setTimeout(mvRefresh,60);
+}
+
+// Cœur de la logique : la date décide de ce qui s'affiche
+function mvRefresh(){
+  const box=document.getElementById('mvImpact');if(!box)return;
+  const typeEl=document.querySelector('#mvTypes .chip.on');
+  const type=typeEl?typeEl.dataset.mv:'div';
+  const date=(document.getElementById('mvDate')||{}).value||'';
+  const mt=parseFloat((document.getElementById('mvMt')||{}).value)||0;
+  const moisMv=date.slice(0,7);
+  const futur=date>todayISO();
+  const courant=(moisMv===moisAffiche());
+  const res=gpd(),data=res?res.data:null;
+  const cap=data?bkCapLine(data):null,sol=data?bkSoldeLine(data):null;
+  const ro=res&&res.status==='snapshot';
+
+  if(futur){
+    box.innerHTML=`<div class="warnbox"><i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0"></i><div>Date dans le futur. N'enregistre un versement qu'une fois qu'il est réellement tombé.</div></div>`;
+    return;
+  }
+  // Mouvement passé : purement documentaire
+  if(!courant||ro){
+    box.innerHTML=`<div class="infobox"><i class="ti ti-history" style="font-size:14px;flex-shrink:0"></i><div>Mouvement historique — il enrichit le journal et le rendement, sans toucher à ton budget ni à tes comptes.</div></div>`;
+    return;
+  }
+  // Mouvement du mois en cours : on montre l'effet et on propose l'écriture
+  const vCap=cap?cap.valeur:0,vSol=sol?sol.valeur:0;
+  let h='<div class="calc" style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">';
+  if(type==='div'){
+    h+=`<span class="mut">Solde Bricks</span><b style="float:right">${fmt(vSol)} → <span class="g">${fmt(vSol+mt)}</span></b><br>
+        <span class="mut">Capital</span><b style="float:right">${fmt(vCap)} <span class="mut">inchangé</span></b>`;
+    h+='</div><div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i><div>Gain de patrimoine. Rien à saisir dans le budget tant que l\'argent reste chez Bricks.</div></div>';
+  } else if(type==='remb'){
+    h+=`<span class="mut">Capital investi</span><b style="float:right">${fmt(vCap)} → <span class="r">${fmt(Math.max(0,vCap-mt))}</span></b><br>
+        <span class="mut">Solde Bricks</span><b style="float:right">${fmt(vSol)} → <span class="g">${fmt(vSol+mt)}</span></b><br>
+        <span class="mut">Exposition totale</span><b style="float:right">${fmt(vCap+vSol)} <span class="mut">inchangée</span></b>`;
+    h+='</div><div class="infobox"><i class="ti ti-arrows-exchange" style="font-size:14px;flex-shrink:0"></i><div>Déplacement d\'une poche à l\'autre. Aucun gain, aucune perte.</div></div>';
+  } else if(type==='retrait'){
+    const cptes=(data.comptes||[]).concat(data.epargne||[]);
+    h+=`<span class="mut">Solde Bricks</span><b style="float:right">${fmt(vSol)} → <span class="r">${fmt(Math.max(0,vSol-mt))}</span></b>`;
+    h+='</div>';
+    h+=`<div class="fg"><label class="fl">Vers quel compte</label><select class="fs" id="mvDest">
+        ${cptes.map(x=>`<option value="${x.id}">${x.nom}</option>`).join('')}</select></div>`;
+    h+=`<div class="warnbox" id="mvWarnNet"><i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0"></i><div>Les comptes courants ne comptent pas dans ton patrimoine net : il baissera de ${fmt(mt)}. Choisis un livret pour l'éviter.</div></div>`;
+    h+=`<label class="chk"><input type="checkbox" id="mvRev" checked> Ajouter une ligne en Revenus du mois</label>`;
+  } else {
+    h+=`<span class="mut">Investissement initial</span><b style="float:right">${fmt(mt)}</b>`;
+    h+='</div><div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i><div>Sert de base au calcul du rendement.</div></div>';
+  }
+  box.innerHTML=h;
+  const sel=document.getElementById('mvDest');
+  if(sel)sel.onchange=()=>{
+    const id=parseInt(sel.value);
+    const est=(data.comptes||[]).some(x=>x.id===id);
+    const w=document.getElementById('mvWarnNet');
+    if(w)w.style.display=est?'flex':'none';
+  };
+}
+
+function saveMv(id){
+  const typeEl=document.querySelector('#mvTypes .chip.on');
+  const type=typeEl?typeEl.dataset.mv:'div';
+  const date=document.getElementById('mvDate').value;
+  const mt=parseFloat(document.getElementById('mvMt').value)||0;
+  const note=document.getElementById('mvNote').value.trim();
+  if(!date||mt<=0)return;
+  if(date>todayISO())return;
+
+  // Écriture dans le journal
+  if(id!=null){
+    const m=D.bricks.mouvements.find(x=>x.id===id);
+    if(m){m.type=type;m.date=date;m.montant=mt;m.note=note;}
+  } else {
+    D.bricks.mouvements.push({id:nid(),type,date,montant:mt,note});
+  }
+
+  // Effet sur le patrimoine, uniquement pour le mois en cours et non figé
+  const res=gpd();
+  const courant=(date.slice(0,7)===moisAffiche());
+  if(courant&&res&&res.status!=='snapshot'&&id==null){
+    const data=res.data,cap=bkCapLine(data);
+    let sol=bkSoldeLine(data);
+    if(!sol&&(type==='div'||type==='remb'||type==='retrait')){
+      sol={id:nid(),nom:'Solde Bricks',type:'bricks',valeur:0,banque:'Bricks.co'};
+      data.immobilier.push(sol);
+    }
+    if(type==='div')       sol.valeur=+(sol.valeur+mt).toFixed(2);
+    else if(type==='remb'){ if(cap)cap.valeur=+Math.max(0,cap.valeur-mt).toFixed(2); sol.valeur=+(sol.valeur+mt).toFixed(2); }
+    else if(type==='retrait'){
+      sol.valeur=+Math.max(0,sol.valeur-mt).toFixed(2);
+      const destEl=document.getElementById('mvDest');
+      if(destEl){
+        const did=parseInt(destEl.value);
+        const dest=(data.comptes||[]).concat(data.epargne||[]).find(x=>x.id===did);
+        if(dest)dest.valeur=+(dest.valeur+mt).toFixed(2);
+      }
+      const rev=document.getElementById('mvRev');
+      if(rev&&rev.checked){
+        // La ligne va dans le budget du mois du mouvement, pas du mois affiché
+        const b=D.budgets[date.slice(0,7)];
+        if(b&&!b._closed){
+          const destEl2=document.getElementById('mvDest');
+          let nomCpt='CM';
+          if(destEl2){const o=destEl2.options[destEl2.selectedIndex];if(o)nomCpt=o.textContent;}
+          b.revenus.push({id:nid(),nom:'Retrait Bricks',montant:mt,compte:nomCpt});
+        }
+      }
+    }
+  }
+  sv();closeOv();renderBricks();
+}
+
+function openBricksMenu(){
+  const res=gpd(),ro=res&&res.status==='snapshot';
+  openOv('Projet Bricks',`
+    <div class="pr" onclick="closeOv();openMvForm()" style="cursor:pointer">
+      <div class="pi" style="background:${softGrad('#1D9E75')};box-shadow:inset 0 0 0 1px #1D9E7526"><i class="ti ti-plus" style="color:#1D9E75"></i></div>
+      <div class="pn"><div class="pa">Ajouter un mouvement</div><div class="pb">Dividende, retrait, remboursement</div></div>
+    </div>
+    <div class="pr" onclick="closeOv();bkSeedHistorique()" style="cursor:pointer">
+      <div class="pi" style="background:${softGrad('#6C5CE7')};box-shadow:inset 0 0 0 1px #6C5CE726"><i class="ti ti-history" style="color:#6C5CE7"></i></div>
+      <div class="pn"><div class="pa">Importer mon historique</div><div class="pb">Les 25 mouvements depuis avril 2024</div></div>
+    </div>
+    <div class="pr" style="border-bottom:none;cursor:pointer" onclick="closeOv();bkVider()">
+      <div class="pi" style="background:${softGrad('#D85A30')};box-shadow:inset 0 0 0 1px #D85A3026"><i class="ti ti-trash" style="color:#D85A30"></i></div>
+      <div class="pn"><div class="pa r">Vider le journal</div><div class="pb">Supprime tous les mouvements</div></div>
+    </div>`,null);
+}
+function bkVider(){
+  openOv('Vider le journal',`<div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">
+    Tous les mouvements seront supprimés. Les montants de ton patrimoine ne changent pas.</div>
+    <button class="sbtn" style="background:#D85A30" onclick="D.bricks.mouvements=[];sv();closeOv();renderBricks();">Confirmer</button>
+    <button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
+}
+
+// Historique réel reconstitué depuis l'appli Bricks
+function bkSeedHistorique(){
+  const H=[['achat','2024-04-05',150.00,'15 bricks'],
+    ['div','2024-06-15',1.55,''],['div','2024-07-15',1.50,''],['div','2024-08-15',1.50,''],
+    ['div','2024-09-15',1.50,''],['div','2024-10-15',1.50,''],['div','2024-11-15',1.50,''],['div','2024-12-15',1.50,''],
+    ['div','2025-01-15',1.50,''],['div','2025-02-15',1.50,''],['div','2025-03-15',1.50,''],
+    ['retrait','2025-04-09',11.59,''],
+    ['div','2025-04-15',1.50,''],['div','2025-05-15',1.50,''],['div','2025-06-15',1.50,''],['div','2025-07-15',1.50,''],
+    ['remb','2025-07-29',7.59,'partiel'],
+    ['div','2025-10-15',1.42,''],['div','2025-11-15',1.42,''],['div','2025-12-15',1.43,''],
+    ['div','2026-01-15',1.42,''],['div','2026-02-15',1.43,''],['div','2026-03-15',1.42,''],['div','2026-04-15',1.42,''],
+    ['retrait','2026-06-03',17.68,''],
+    ['div','2026-06-10',2.85,'rattrapage'],['div','2026-06-20',2.91,'rattrapage'],['div','2026-07-15',1.42,'']];
+  openOv('Importer mon historique',`<div style="font-size:14px;color:var(--tx2);margin-bottom:18px;line-height:1.6">
+    ${H.length} mouvements depuis le 5 avril 2024, reconstitués depuis ton appli Bricks.
+    <br><br>Ils sont <b style="color:var(--tx1)">purement documentaires</b> : aucun impact sur ton budget ni sur tes comptes.</div>
+    <button class="sbtn" onclick="bkSeedGo()">Importer</button>
+    <button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
+  window.__bkSeed=H;
+}
+function bkSeedGo(){
+  const H=window.__bkSeed||[];
+  H.forEach(([type,date,montant,note])=>{
+    if(!D.bricks.mouvements.some(m=>m.date===date&&m.type===type&&Math.abs(m.montant-montant)<0.005))
+      D.bricks.mouvements.push({id:nid(),type,date,montant,note});
+  });
+  sv();closeOv();renderBricks();
+}
+
 function renderH(){
   const b=gcb();
   document.getElementById('hm').textContent=MN[cm]+' '+cy;
@@ -1165,7 +1542,7 @@ function svB(){
 }
 
 function pForm(item,section){
-  const types={comptes:[{k:'compte',v:'Compte courant'}],epargne:[{k:'livret',v:'Livret Jeune'},{k:'pea',v:'PEA'},{k:'av',v:'Assurance Vie'},{k:'ldd',v:'LDD'}],immobilier:[{k:'immo',v:'Immobilier'}],passifs:[{k:'passif',v:'Passif / Crédit'}]};
+  const types={comptes:[{k:'compte',v:'Compte courant'}],epargne:[{k:'livret',v:'Livret Jeune'},{k:'pea',v:'PEA'},{k:'av',v:'Assurance Vie'},{k:'ldd',v:'LDD'}],immobilier:[{k:'immo',v:'Immobilier'},{k:'bricks',v:'Solde Bricks'}],passifs:[{k:'passif',v:'Passif / Crédit'}]};
   const tc=(types[section]||[]).map((t,i)=>`<div class="chip${item?item.type===t.k?' on':'':i===0?' on':''}" onclick="selChip(this)" data-type="${t.k}">${t.v}</div>`).join('');
   return`<div class="fg"><label class="fl">Type</label><div class="chips">${tc}</div></div>
     <div class="fg"><label class="fl">Nom</label><input class="fi" id="fn" value="${item?item.nom:''}" placeholder="Ex: Livret A"></div>
