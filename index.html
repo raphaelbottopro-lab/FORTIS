@@ -1426,28 +1426,35 @@ function saveMv(id){
   sv();closeOv();renderBricks();
 }
 
-function openBricksMenu(){
-  const res=gpd(),ro=res&&res.status==='snapshot';
-  openOv('Projet Bricks',`
-    <div class="pr" onclick="closeOv();openMvForm()" style="cursor:pointer">
-      <div class="pi" style="background:${softGrad('#1D9E75')};box-shadow:inset 0 0 0 1px #1D9E7526"><i class="ti ti-plus" style="color:#1D9E75"></i></div>
-      <div class="pn"><div class="pa">Ajouter un mouvement</div><div class="pb">Dividende, retrait, remboursement</div></div>
-    </div>
-    <div class="pr" onclick="closeOv();bkSeedHistorique()" style="cursor:pointer">
-      <div class="pi" style="background:${softGrad('#6C5CE7')};box-shadow:inset 0 0 0 1px #6C5CE726"><i class="ti ti-history" style="color:#6C5CE7"></i></div>
-      <div class="pn"><div class="pa">Importer mon historique</div><div class="pb">Les 25 mouvements depuis avril 2024</div></div>
-    </div>
-    <div class="pr" style="border-bottom:none;cursor:pointer" onclick="closeOv();bkVider()">
-      <div class="pi" style="background:${softGrad('#D85A30')};box-shadow:inset 0 0 0 1px #D85A3026"><i class="ti ti-trash" style="color:#D85A30"></i></div>
-      <div class="pn"><div class="pa r">Vider le journal</div><div class="pb">Supprime tous les mouvements</div></div>
-    </div>`,null);
+function bkMenuRow(fn,col,ic,titre,sous,last){
+  return `<button type="button" onclick="${fn}()" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;${last?'':'border-bottom:1px solid var(--bd1);'}text-align:left;font-family:inherit;cursor:pointer">
+    <span class="pi" style="background:${softGrad(col)};box-shadow:inset 0 0 0 1px ${col}26"><i class="ti ${ic}" style="color:${col}"></i></span>
+    <span style="flex:1;min-width:0">
+      <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${titre}</span>
+      <span style="display:block;font-size:11px;color:var(--tx2);margin-top:2px">${sous}</span>
+    </span>
+    <i class="ti ti-chevron-right" style="color:var(--tx2);font-size:15px"></i>
+  </button>`;
 }
+function openBricksMenu(){
+  openOv('Projet Bricks',
+    bkMenuRow('bkMenuAdd','#1D9E75','ti-plus','Ajouter un mouvement','Dividende, retrait, remboursement')+
+    bkMenuRow('bkMenuSeed','#6C5CE7','ti-history','Importer mon historique','Les mouvements depuis avril 2024')+
+    bkMenuRow('bkMenuClear','#D85A30','ti-trash','Vider le journal','Supprime tous les mouvements',true)
+  ,null);
+}
+// Chaque entrée ferme la feuille puis ouvre la suivante au tick suivant (Safari iOS)
+function bkMenuAdd(){closeOv();setTimeout(openMvForm,60);}
+function bkMenuSeed(){closeOv();setTimeout(bkSeedHistorique,60);}
+function bkMenuClear(){closeOv();setTimeout(bkVider,60);}
+
 function bkVider(){
   openOv('Vider le journal',`<div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">
     Tous les mouvements seront supprimés. Les montants de ton patrimoine ne changent pas.</div>
-    <button class="sbtn" style="background:#D85A30" onclick="D.bricks.mouvements=[];sv();closeOv();renderBricks();">Confirmer</button>
-    <button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
+    <button type="button" class="sbtn" style="background:#D85A30" onclick="bkViderGo()">Confirmer</button>
+    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
 }
+function bkViderGo(){D.bricks.mouvements=[];sv();closeOv();renderBricks();}
 
 // Historique réel reconstitué depuis l'appli Bricks
 function bkSeedHistorique(){
@@ -1465,8 +1472,8 @@ function bkSeedHistorique(){
   openOv('Importer mon historique',`<div style="font-size:14px;color:var(--tx2);margin-bottom:18px;line-height:1.6">
     ${H.length} mouvements depuis le 5 avril 2024, reconstitués depuis ton appli Bricks.
     <br><br>Ils sont <b style="color:var(--tx1)">purement documentaires</b> : aucun impact sur ton budget ni sur tes comptes.</div>
-    <button class="sbtn" onclick="bkSeedGo()">Importer</button>
-    <button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
+    <button type="button" class="sbtn" onclick="bkSeedGo()">Importer</button>
+    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
   window.__bkSeed=H;
 }
 function bkSeedGo(){
