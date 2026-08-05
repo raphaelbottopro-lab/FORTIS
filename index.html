@@ -86,7 +86,8 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .shn{width:36px;height:4px;border-radius:2px;background:var(--bd2);margin:0 auto 18px}
 .sha{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .shd{background:transparent;border:none;cursor:pointer;color:#D85A30;font-size:14px;display:flex;align-items:center;gap:4px;font-family:var(--font);padding:0}
-.fg{margin-bottom:13px}
+.fg{margin-bottom:13px;min-width:0}
+.fi,.fs{max-width:100%}
 .fl{font-size:12px;color:var(--tx2);margin-bottom:5px;display:block}
 .fi{width:100%;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd2);background:var(--bg2);font-size:15px;color:var(--tx1);font-family:var(--font)}
 .fs{width:100%;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd2);background:var(--bg2);font-size:15px;color:var(--tx1);font-family:var(--font)}
@@ -221,6 +222,21 @@ input:checked+.tslider:before{transform:translateX(20px)}
 .chk{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--tx1);margin-bottom:12px}
 .chk input{width:18px;height:18px;accent-color:var(--acc)}
 .mv-empty{padding:22px 15px;text-align:center;font-size:12px;color:var(--tx2);line-height:1.6}
+
+/* --- Module PEA --- */
+.posrow{display:flex;align-items:center;gap:11px;padding:12px 13px;border-bottom:1px solid var(--bd1);cursor:pointer}
+.posrow:last-of-type{border-bottom:none}
+.postick{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.picks{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.pick{aspect-ratio:1;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--tx2);border:1px solid transparent;cursor:pointer}
+.pick.on{background:var(--accsoft);color:var(--acc);border-color:var(--acc)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:30px;height:30px;border-radius:9px;position:relative;cursor:pointer}
+.sw.on:after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
+.sw.on{box-shadow:0 0 0 2px var(--bg1),0 0 0 4px var(--acc)}
+.bigtile{width:60px;height:60px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0}
+.act2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.act2 button{padding:11px;border-radius:11px;font-size:12.5px;font-weight:500;border:1px solid var(--bd2);background:var(--bg2);color:var(--tx1);display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;cursor:pointer}
 </style>
 </head>
 <body>
@@ -306,6 +322,37 @@ input:checked+.tslider:before{transform:translateX(20px)}
       <input type="file" id="imf" accept=".json" style="display:none" onchange="importData(event)">
     </div>
   </div>
+</div>
+
+<!-- SOUS-PAGE PEA -->
+<div class="subpage" id="scr-pea">
+  <div class="snav">
+    <button class="bk" onclick="closePea()"><i class="ti ti-chevron-left"></i></button>
+    <span class="ttl" id="peaTitle">PEA</span>
+    <button class="bk" style="color:var(--tx2);font-size:19px" onclick="openPeaMenu()"><i class="ti ti-dots"></i></button>
+  </div>
+  <div class="hero">
+    <div class="hero-lbl">Valeur du portefeuille</div>
+    <div class="hero-val" id="peaTot">0 €</div>
+    <div class="hero-sub" id="peaSub"></div>
+  </div>
+  <div id="peaWarn"></div>
+  <div class="sgrid">
+    <div class="scard"><div class="slbl">Plus-value latente</div><div class="sval" id="peaPV">0 €</div></div>
+    <div class="scard"><div class="slbl">Performance</div><div class="sval" id="peaPerf">—</div></div>
+  </div>
+  <div class="chart-card" id="peaRepCard">
+    <div class="stackbar" id="peaStack"></div>
+    <div class="legend" id="peaLeg"></div>
+  </div>
+  <div class="stl" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Positions</span><span class="mut" id="peaCount" style="text-transform:none;letter-spacing:0"></span>
+  </div>
+  <div class="card" id="peaList"></div>
+  <div class="stl" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Dividendes <span id="peaDivYear"></span></span><span class="g" id="peaDivTot" style="text-transform:none;letter-spacing:0;font-weight:600"></span>
+  </div>
+  <div class="card" id="peaDivList"></div>
 </div>
 
 <!-- SOUS-PAGE BRICKS -->
@@ -400,7 +447,38 @@ const PI={
 function softGrad(col){return`linear-gradient(145deg, ${col}38, ${col}14)`;}
 function piH(t){const i=PI[t]||{col:'#7C8598',ic:'ti-circle'};return`<div class="pi" style="background:${softGrad(i.col)};box-shadow:inset 0 0 0 1px ${i.col}26"><i class="ti ${i.ic}" style="color:${i.col}"></i></div>`;}
 
-function dsk(d){if(!d)return 9999;const p=d.split('/');if(p.length!==2)return 9999;return parseInt(p[1])*100+parseInt(p[0]);}
+// --- Dates : stockage ISO (AAAA-MM-JJ), affichage JJ/MM ---
+function isISO(d){return typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d);}
+// Affichage court, inchangé pour l'utilisateur
+function dAff(d){
+  if(!d)return'';
+  if(isISO(d)){const[,m,j]=d.split('-');return j+'/'+m;}
+  return d;
+}
+// Clé de tri : chronologique réelle si ISO, sinon repli sur MMJJ
+function dsk(d){
+  if(!d)return 99999999;
+  if(isISO(d))return parseInt(d.replace(/-/g,''),10);
+  const p=d.split('/');
+  if(p.length!==2)return 99999999;
+  return 99990000+parseInt(p[1])*100+parseInt(p[0]);
+}
+// Conversion JJ/MM -> ISO, en déduisant l'année du mois du budget.
+// Si la date est manifestement du mois précédent (déc. dans un budget de janv.), on recule d'un an.
+function toISO(jjmm,budgetKey){
+  if(!jjmm||isISO(jjmm))return jjmm||'';
+  const p=String(jjmm).split('/');
+  if(p.length!==2)return '';
+  const j=parseInt(p[0],10),m=parseInt(p[1],10);
+  if(!(j>=1&&j<=31&&m>=1&&m<=12))return '';
+  const[by,bm]=budgetKey.split('-').map(Number);
+  let y=by;
+  // écart en mois entre la date et le mois du budget
+  let ec=m-bm;
+  if(ec>6)y=by-1;        // ex. 31/12 saisi dans un budget de janvier
+  else if(ec<-6)y=by+1;  // ex. 02/01 saisi dans un budget de décembre
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(j).padStart(2,'0');
+}
 function si(c,a){if(!c.sd)return a;return[...a].sort((x,y)=>dsk(x.date)-dsk(y.date));}
 function bk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1);}
 
@@ -451,10 +529,23 @@ const DD=()=>({
   },
   objectifEpargne:200,
   bricks:{mouvements:[]},
+  pea:{positions:[],liquidites:0,dividendes:[]},
+  _datesISO:true,
   nextId:500,
 });
 
 let D=DD();
+// Migration unique : dates budget JJ/MM -> ISO complet
+function migrerDates(){
+  if(D._datesISO)return;
+  Object.keys(D.budgets||{}).forEach(k=>{
+    const b=D.budgets[k];
+    ['charges','abonnements','epargne','plaisirs','revenus'].forEach(cat=>{
+      (b[cat]||[]).forEach(it=>{ if(it.date) it.date=toISO(it.date,k)||it.date; });
+    });
+  });
+  D._datesISO=true;
+}
 function sv(){try{localStorage.setItem('bb3',JSON.stringify(D))}catch(e){}}
 function ld(){
   try{
@@ -464,6 +555,8 @@ function ld(){
       // Migration snapshots manquants
       if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;
       if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};
+      if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};
+      migrerDates();
       const b=buildSnaps();
       Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});
       // Mettre à jour editingMonth vers le dernier mois non snapshot
@@ -704,7 +797,7 @@ function renderB(){
       <i class="ti ti-chevron-down cc${op?' open':''}"></i>
     </div><div class="cb${op?' open':''}">`;
     its.forEach(item=>{
-      const meta=cat.ns?item.compte||'':[item.compte,item.date,item.statut].filter(Boolean).join(' · ');
+      const meta=cat.ns?item.compte||'':[item.compte,dAff(item.date),item.statut].filter(Boolean).join(' · ');
       const dot=cat.ns?'':sdot(item.statut||'');
       html+=`<div class="row" onclick="dismissBanner()"><div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div></div>
         <div class="ra ${cat.ac}">${cat.sign}${fmt(item.montant)}</div>
@@ -778,6 +871,7 @@ function svSnap(){
   let d;if(k===D.patrimoine.editingMonth)d=JSON.parse(JSON.stringify(D.patrimoine.current));
   else if(D.patrimoine.drafts[k])d=JSON.parse(JSON.stringify(D.patrimoine.drafts[k]));
   else return;
+  d._pea=JSON.parse(JSON.stringify(D.pea||{positions:[],liquidites:0,dividendes:[]}));
   D.patrimoine.snapshots[k]=d;delete D.patrimoine.drafts[k];
   // Si on vient de figer le mois "current", on avance editingMonth au mois suivant
   // et on copie les valeurs fraîchement figées dans current pour que le mois suivant
@@ -852,11 +946,12 @@ function renderP(){
     items.forEach(item=>{
       let ev='';
       if(prev&&!isp){const a=prev[sec]||[],p=a.find(x=>x.id===item.id);if(p){const df=item.valeur-p.valeur;if(Math.abs(df)>0.5){const sg=df>0?'+':'';const ec=df>0?'#1D9E75':'#D85A30';ev=`<span class="pe" style="color:${ec}">${sg}${fmk(df)}</span>`;}}}
-      const clic=isBricksLine(item)?` onclick="openBricks(${item.id})" style="cursor:pointer"`:'';
+      const clic=isBricksLine(item)?` onclick="openBricks(${item.id})" style="cursor:pointer"`
+                 :(item.type==='pea'?` onclick="openPea()" style="cursor:pointer"`:'');
       h+=`<div class="pr"${clic}>${piH(item.type)}<div class="pn"><div class="pa">${item.nom}</div><div class="pb">${item.banque}</div></div>
         <div style="text-align:right"><div class="pv ${cls}">${isp?'−':''}${fmt(item.valeur)}</div>${ev}</div>
         ${isEd?`<button class="rb" onclick="event.stopPropagation();oEP('${sec}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
-        ${isBricksLine(item)?`<i class="ti ti-chevron-right" style="color:var(--acc);font-size:16px"></i>`:''}
+        ${(isBricksLine(item)||item.type==='pea')?`<i class="ti ti-chevron-right" style="color:var(--acc);font-size:16px"></i>`:''}
       </div>`;
     });
     if(isEd)h+=`<button class="ab" onclick="oAP('${sec}')"><i class="ti ti-plus"></i>Ajouter</button>`;
@@ -1159,6 +1254,487 @@ function renderMoyenne(){
 }
 
 
+
+// ============ MODULE PEA ============
+// Bibliothèque : pictogramme sectoriel + couleur de marque
+const PEA_LIB=[
+ {k:'orange',            ic:'ti-antenna-bars-5',    col:'#FF7900'},
+ {k:'total',             ic:'ti-gas-station',       col:'#E4002B'},
+ {k:'bnp',               ic:'ti-building-bank',     col:'#00915A'},
+ {k:'axa',               ic:'ti-shield-check',      col:'#3B4FE0'},
+ {k:'carrefour',         ic:'ti-shopping-cart',     col:'#0072CE'},
+ {k:'stellantis',        ic:'ti-car',               col:'#5A6570'},
+ {k:'fdj',               ic:'ti-dice-5',            col:'#E0A32E'},
+ {k:'francaise des jeux',ic:'ti-dice-5',            col:'#E0A32E'},
+ {k:'sanofi',            ic:'ti-vaccine-bottle',    col:'#7A00E6'},
+ {k:'thales',            ic:'ti-shield-lock',       col:'#6B8FC7'},
+ {k:'air liquide',       ic:'ti-flask',             col:'#29B6E8'},
+ {k:'vinci',             ic:'ti-building-bridge',   col:'#A0B4C8'},
+ {k:'engie',             ic:'ti-windmill',          col:'#35C4C4'},
+ {k:'amundi',            ic:'ti-chart-pie',         col:'#0E7C86'},
+ {k:'publicis',          ic:'ti-speakerphone',      col:'#E0508A'},
+ {k:'pernod',            ic:'ti-bottle',            col:'#B5651D'},
+ {k:'michelin',          ic:'ti-steering-wheel',    col:'#3D5AA8'},
+ {k:'ipsos',             ic:'ti-clipboard-data',    col:'#C2185B'},
+ {k:'lvmh',              ic:'ti-diamond',           col:'#C9B99A'},
+ {k:'euronext',          ic:'ti-building-skyscraper',col:'#7E6BC9'},
+];
+// Déduction par secteur si la valeur n'est pas dans la bibliothèque
+const PEA_SECT=[
+ {re:/etf|msci|s&p|indice|world|nasdaq|cac/i, ic:'ti-world',          col:'#5A6570'},
+ {re:/banque|bank|credit|crédit|societe generale|société générale/i, ic:'ti-building-bank', col:'#00915A'},
+ {re:/assur|axa|allianz/i,                   ic:'ti-shield-check',    col:'#3B4FE0'},
+ {re:/energ|énerg|petrol|pétrol|gaz|oil/i,   ic:'ti-flame',           col:'#E4002B'},
+ {re:/pharma|sant[ée]|bio|medic|médic/i,     ic:'ti-vaccine-bottle',  col:'#7A00E6'},
+ {re:/tech|soft|digital|info|cyber|data/i,   ic:'ti-cpu',             col:'#0E7C86'},
+ {re:/immo|fonci|reit/i,                     ic:'ti-home',            col:'#D85A30'},
+ {re:/luxe|luxury|mode/i,                    ic:'ti-diamond',         col:'#C9B99A'},
+ {re:/auto|voiture|mobilit/i,                ic:'ti-car',             col:'#5A6570'},
+ {re:/telecom|télécom|mobile/i,              ic:'ti-antenna-bars-5',  col:'#FF7900'},
+ {re:/or\b|gold|argent|matiere|matière/i,    ic:'ti-coins',           col:'#E0A32E'},
+];
+const PEA_PICKS=['ti-antenna-bars-5','ti-gas-station','ti-building-bank','ti-shield-check','ti-shopping-cart','ti-car',
+ 'ti-dice-5','ti-vaccine-bottle','ti-shield-lock','ti-flask','ti-building-bridge','ti-windmill',
+ 'ti-chart-pie','ti-speakerphone','ti-bottle','ti-steering-wheel','ti-clipboard-data','ti-diamond',
+ 'ti-building-skyscraper','ti-world','ti-cpu','ti-home','ti-coins','ti-chart-bar'];
+const PEA_COLS=['#185FA5','#8B7CF0','#D4537E','#1D9E75','#E0A32E','#D85A30','#00A5B5','#7A00E6','#3DCD58','#C0392B','#C9B99A','#5A6570'];
+
+// Reconnaît une valeur à partir de son nom
+function peaDetect(nom){
+  const n=(nom||'').toLowerCase().trim();
+  for(const e of PEA_LIB) if(n.includes(e.k)) return{ic:e.ic,col:e.col,reconnu:true};
+  for(const s of PEA_SECT) if(s.re.test(n)) return{ic:s.ic,col:s.col,reconnu:false};
+  // Couleur stable déduite du nom
+  let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%PEA_COLS.length;
+  return{ic:'ti-chart-bar',col:PEA_COLS[h],reconnu:false};
+}
+function peaCode(p){return (p.code||p.nom||'').trim().slice(0,4).toUpperCase();}
+function peaVal(p){return (p.qte||0)*(p.cours||0);}
+function peaPV(p){return peaVal(p)-(p.qte||0)*(p.pru||0);}
+function peaTotal(){return (D.pea.positions||[]).reduce((a,p)=>a+peaVal(p),0)+(D.pea.liquidites||0);}
+function peaInvesti(){return (D.pea.positions||[]).reduce((a,p)=>a+(p.qte||0)*(p.pru||0),0);}
+function peaPVTot(){return (D.pea.positions||[]).reduce((a,p)=>a+peaPV(p),0);}
+function peaDivAn(y){return (D.pea.dividendes||[]).filter(d=>d.date.startsWith(y)).reduce((a,d)=>a+d.montant,0);}
+
+
+let peaRO=false;   // lecture seule si mois figé
+function peaData(){
+  const res=gpd();
+  if(res&&res.status==='snapshot'&&res.data._pea)return{d:res.data._pea,ro:true};
+  return{d:D.pea,ro:false};
+}
+function openPea(){
+  document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.getElementById('scr-pea').classList.add('on');
+  try{window.scrollTo(0,0);}catch(e){}
+  renderPea();
+}
+function closePea(){
+  document.getElementById('scr-pea').classList.remove('on');
+  document.getElementById('scr-patrim').classList.add('on');
+  renderP();
+}
+
+function renderPea(){
+  const res=gpd();if(!res){closePea();return;}
+  const P=peaData();peaRO=P.ro;
+  const pea=P.d;
+  const ligne=(res.data.epargne||[]).find(x=>x.type==='pea');
+  const saisi=ligne?ligne.valeur:0;
+
+  const tot=(pea.positions||[]).reduce((a,p)=>a+peaVal(p),0)+(pea.liquidites||0);
+  const inv=(pea.positions||[]).reduce((a,p)=>a+(p.qte||0)*(p.pru||0),0);
+  const pv=(pea.positions||[]).reduce((a,p)=>a+peaPV(p),0);
+
+  document.getElementById('peaTitle').textContent=ligne?ligne.nom:'PEA';
+  document.getElementById('peaTot').textContent=fmt(saisi);
+  document.getElementById('peaSub').textContent=
+    (ligne&&ligne.banque?ligne.banque+' · ':'')+
+    ((pea.positions||[]).length?`${pea.positions.length} ligne${pea.positions.length>1?'s':''}`+((pea.liquidites||0)>0?' + liquidités':''):'aucune position');
+
+  const pvEl=document.getElementById('peaPV'),pfEl=document.getElementById('peaPerf');
+  pvEl.textContent=(pv>=0?'+':'−')+fmt(Math.abs(pv));
+  pvEl.className='sval '+(pv>=0?'g':'r');
+  pfEl.textContent=inv>0?((pv>=0?'+':'−')+Math.abs(pv/inv*100).toFixed(2)+' %'):'—';
+  pfEl.className='sval '+(pv>=0?'g':'r');
+
+  // Bandeaux : lecture seule ou écart avec la valeur saisie
+  let w='';
+  if(peaRO) w=`<div class="warnbox"><i class="ti ti-lock" style="font-size:15px;flex-shrink:0"></i><div>Photo du portefeuille au ${MN[pm].toLowerCase()} ${py}.</div></div>`;
+  else{
+    const ec=saisi-tot;
+    if((pea.positions||[]).length&&Math.abs(ec)>1)
+      w=`<div class="warnbox"><i class="ti ti-alert-triangle" style="font-size:15px;flex-shrink:0"></i><div>Tes positions totalisent <b>${fmt(tot)}</b>, soit <b>${fmt(Math.abs(ec))}</b> ${ec>0?'de moins que':'de plus que'} la valeur saisie.<br><span style="color:var(--acc);cursor:pointer" onclick="openLiquid()">Ajuster les liquidités →</span></div></div>`;
+  }
+  document.getElementById('peaWarn').innerHTML=w;
+
+  // Répartition
+  const rep=document.getElementById('peaRepCard');
+  if(tot>0){
+    rep.style.display='';
+    const parts=(pea.positions||[]).map(p=>({n:p.nom,v:peaVal(p),c:p.col||'#5A6570'})).filter(x=>x.v>0)
+      .sort((a,b)=>b.v-a.v);
+    if((pea.liquidites||0)>0)parts.push({n:'Liquidités',v:pea.liquidites,c:'#5A6570'});
+    document.getElementById('peaStack').innerHTML=parts.map(x=>`<i style="width:${x.v/tot*100}%;background:${x.c}"></i>`).join('');
+    document.getElementById('peaLeg').innerHTML=parts.map(x=>
+      `<span class="leg-item"><span class="leg-dot" style="background:${x.c}"></span><span style="color:var(--tx2)">${x.n} <strong style="color:var(--tx1)">${Math.round(x.v/tot*100)}%</strong></span></span>`).join('');
+  } else rep.style.display='none';
+
+  renderPeaList(pea);
+  renderPeaDiv(pea);
+}
+
+function renderPeaList(pea){
+  const box=document.getElementById('peaList');
+  const pos=(pea.positions||[]).slice().sort((a,b)=>peaVal(b)-peaVal(a));
+  document.getElementById('peaCount').textContent=pos.length?pos.length:'';
+  let h='';
+  if(!pos.length&&!peaRO){
+    h=`<div class="mv-empty"><i class="ti ti-chart-candle" style="font-size:30px;color:var(--bd2);display:block;margin-bottom:9px"></i>
+       Aucune position enregistrée.<br>Ajoute tes titres pour suivre ta plus-value et ta répartition.</div>`;
+  }
+  pos.forEach(p=>{
+    const pv=peaPV(p),inv=(p.qte||0)*(p.pru||0);
+    const pc=inv>0?(pv/inv*100):0;
+    h+=`<div class="posrow" ${peaRO?'':`onclick="openPosMenu(${p.id})"`}>
+      <div class="postick" style="background:${softGrad(p.col||'#5A6570')};box-shadow:inset 0 0 0 1px ${(p.col||'#5A6570')}26">
+        <i class="ti ${p.ic||'ti-chart-bar'}" style="color:${p.col||'#5A6570'}"></i></div>
+      <div class="pn"><div class="pa">${p.nom}</div>
+        <div class="pb">${p.qte} × ${fmt(p.cours)}${p.pru?' · PRU '+fmt(p.pru):''}</div></div>
+      <div style="text-align:right">
+        <div class="pv">${fmt(peaVal(p))}</div>
+        ${inv>0?`<div style="font-size:10.5px;margin-top:2px;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${fmt(Math.abs(pv))} · ${pv>=0?'+':'−'}${Math.abs(pc).toFixed(1)} %</div>`:''}
+      </div>
+    </div>`;
+  });
+  if((pea.liquidites||0)>0||!peaRO){
+    h+=`<div class="posrow" ${peaRO?'':'onclick="openLiquid()"'}>
+      <div class="postick" style="background:var(--bg2);color:var(--tx2)"><i class="ti ti-cash"></i></div>
+      <div class="pn"><div class="pa mut">Liquidités</div><div class="pb">non investi</div></div>
+      <div class="pv mut">${fmt(pea.liquidites||0)}</div>
+    </div>`;
+  }
+  if(!peaRO)h+=`<button class="ab" onclick="openPosForm()"><i class="ti ti-plus"></i>Ajouter une position</button>`;
+  box.innerHTML=h;
+}
+
+function renderPeaDiv(pea){
+  const y=String(py);
+  const divs=(pea.dividendes||[]).filter(d=>d.date.startsWith(y)).sort((a,b)=>b.date.localeCompare(a.date));
+  const tot=divs.reduce((a,d)=>a+d.montant,0);
+  document.getElementById('peaDivYear').textContent=y;
+  document.getElementById('peaDivTot').textContent=tot?'+'+fmt(tot):'';
+  let h='';
+  if(!divs.length)h=`<div class="mv-empty">Aucun dividende encaissé en ${y}.</div>`;
+  divs.forEach(d=>{
+    const p=(pea.positions||[]).find(x=>x.id===d.posId);
+    const[Y,M,J]=d.date.split('-');
+    h+=`<div class="pr" ${peaRO?'':`onclick="openDivForm(${d.id})"`} style="${peaRO?'':'cursor:pointer'}">
+      <div class="pi" style="background:${softGrad(p?p.col:'#1D9E75')};box-shadow:inset 0 0 0 1px ${(p?p.col:'#1D9E75')}26">
+        <i class="ti ${p?p.ic:'ti-coin'}" style="color:${p?p.col:'#1D9E75'}"></i></div>
+      <div class="pn"><div class="pa">${p?p.nom:'Dividende'}</div><div class="pb">${J}/${M}/${Y}</div></div>
+      <div class="pv g">+${fmt(d.montant)}</div>
+    </div>`;
+  });
+  if(!peaRO)h+=`<button class="ab" onclick="openDivForm()"><i class="ti ti-plus"></i>Enregistrer un dividende</button>`;
+  document.getElementById('peaDivList').innerHTML=h;
+}
+
+
+// ---- Formulaire position ----
+let posIc=null,posCol=null;
+function openPosForm(id){
+  const ex=id!=null?D.pea.positions.find(p=>p.id===id):null;
+  posIc=ex?ex.ic:null;posCol=ex?ex.col:null;
+  const body=`
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:15px">
+      <div class="bigtile" id="posTile"></div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--tx1)" id="posName">${ex?ex.nom:'Nouvelle position'}</div>
+      <div style="font-size:11px;margin-top:3px" id="posDetect"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Nom</label><input class="fi" id="pfNom" value="${ex?ex.nom:''}" placeholder="Ex : Air Liquide" oninput="posRefresh()"></div>
+      <div class="fg"><label class="fl">Code</label><input class="fi" id="pfCode" value="${ex&&ex.code?ex.code:''}" placeholder="AI"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Quantité</label><input class="fi" id="pfQte" type="number" step="0.0001" inputmode="decimal" value="${ex?ex.qte:''}" placeholder="0" oninput="posRefresh()"></div>
+      <div class="fg"><label class="fl">Cours actuel (€)</label><input class="fi" id="pfCours" type="number" step="0.01" inputmode="decimal" value="${ex?ex.cours:''}" placeholder="0.00" oninput="posRefresh()"></div>
+    </div>
+    <div class="fg"><label class="fl">Prix de revient unitaire (€)</label><input class="fi" id="pfPru" type="number" step="0.01" inputmode="decimal" value="${ex&&ex.pru?ex.pru:''}" placeholder="0.00" oninput="posRefresh()"></div>
+    <div id="posCalc"></div>
+    <div class="fg"><label class="fl">Symbole</label><div class="picks" id="posPicks">
+      ${PEA_PICKS.map(i=>`<div class="pick" data-ic="${i}" onclick="posPick('${i}')"><i class="ti ${i}"></i></div>`).join('')}
+    </div></div>
+    <div class="fg"><label class="fl">Couleur</label><div class="swatches" id="posSw">
+      ${PEA_COLS.map(x=>`<div class="sw" data-col="${x}" style="background:${x}" onclick="posSw('${x}')"></div>`).join('')}
+    </div></div>
+    <button type="button" class="sbtn" onclick="savePos(${ex?ex.id:'null'})">Enregistrer</button>`;
+  openOv(ex?'Modifier la position':'Nouvelle position',body,
+    ex?()=>{D.pea.positions=D.pea.positions.filter(p=>p.id!==ex.id);
+            D.pea.dividendes=(D.pea.dividendes||[]).filter(d=>d.posId!==ex.id);sv();renderPea();}:null);
+  setTimeout(posRefresh,60);
+}
+function posPick(i){posIc=i;posRefresh();}
+function posSw(x){posCol=x;posRefresh();}
+function posRefresh(){
+  const nom=(document.getElementById('pfNom')||{}).value||'';
+  const det=peaDetect(nom);
+  const ic=posIc||det.ic,col=posCol||det.col;
+  const t=document.getElementById('posTile');
+  if(t){t.style.background=softGrad(col);t.style.boxShadow='inset 0 0 0 1px '+col+'26';
+        t.innerHTML=`<i class="ti ${ic}" style="color:${col}"></i>`;}
+  const nEl=document.getElementById('posName');if(nEl)nEl.textContent=nom||'Nouvelle position';
+  const dEl=document.getElementById('posDetect');
+  if(dEl)dEl.innerHTML=nom?(det.reconnu?'<span style="color:var(--pos)"><i class="ti ti-sparkles"></i> valeur reconnue</span>':'<span class="mut">symbole déduit — modifiable ci-dessous</span>'):'';
+  document.querySelectorAll('#posPicks .pick').forEach(e=>e.classList.toggle('on',e.dataset.ic===ic));
+  document.querySelectorAll('#posSw .sw').forEach(e=>e.classList.toggle('on',e.dataset.col===col));
+  const q=parseFloat((document.getElementById('pfQte')||{}).value)||0;
+  const co=parseFloat((document.getElementById('pfCours')||{}).value)||0;
+  const pr=parseFloat((document.getElementById('pfPru')||{}).value)||0;
+  const cEl=document.getElementById('posCalc');
+  if(cEl){
+    const val=q*co,pv=val-q*pr,inv=q*pr;
+    cEl.innerHTML=val?`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">
+      <span class="mut">Valeur</span><b style="float:right">${fmt(val)}</b>
+      ${inv?`<br><span class="mut">Plus-value</span><b style="float:right;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${fmt(Math.abs(pv))} · ${pv>=0?'+':'−'}${Math.abs(pv/inv*100).toFixed(1)} %</b>`:''}
+    </div>`:'';
+  }
+}
+function savePos(id){
+  const nom=document.getElementById('pfNom').value.trim();
+  if(!nom)return;
+  const det=peaDetect(nom);
+  const o={nom,
+    code:document.getElementById('pfCode').value.trim().toUpperCase(),
+    qte:parseFloat(document.getElementById('pfQte').value)||0,
+    cours:parseFloat(document.getElementById('pfCours').value)||0,
+    pru:parseFloat(document.getElementById('pfPru').value)||0,
+    ic:posIc||det.ic,col:posCol||det.col};
+  if(id!=null){const p=D.pea.positions.find(x=>x.id===id);if(p)Object.assign(p,o);}
+  else D.pea.positions.push(Object.assign({id:nid()},o));
+  sv();closeOv();renderPea();
+}
+
+// ---- Menu d'une position ----
+function openPosMenu(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  const pv=peaPV(p),inv=(p.qte||0)*(p.pru||0);
+  const divY=(D.pea.dividendes||[]).filter(d=>d.posId===id&&d.date.startsWith(String(py))).reduce((a,d)=>a+d.montant,0);
+  openOv(p.nom,`
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:14px">
+      <div class="bigtile" style="background:${softGrad(p.col)};box-shadow:inset 0 0 0 1px ${p.col}26"><i class="ti ${p.ic}" style="color:${p.col}"></i></div>
+      <div style="flex:1"><div style="font-size:16px;font-weight:600;color:var(--tx1)">${p.nom}</div>
+        <div style="font-size:11.5px;color:var(--tx2);margin-top:2px">${p.qte} titre${p.qte>1?'s':''}${p.code?' · '+p.code:''}</div></div>
+      <div style="text-align:right"><div style="font-size:16px;font-weight:600;color:var(--tx1)">${fmt(peaVal(p))}</div>
+        ${inv?`<div style="font-size:11.5px;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${Math.abs(pv/inv*100).toFixed(1)} %</div>`:''}</div>
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.95;margin-bottom:12px">
+      <span class="mut">Cours actuel</span><b style="float:right">${fmt(p.cours)}</b><br>
+      <span class="mut">Prix de revient</span><b style="float:right">${p.pru?fmt(p.pru):'—'}</b><br>
+      <span class="mut">Plus-value</span><b style="float:right;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${fmt(Math.abs(pv))}</b><br>
+      <span class="mut">Dividendes ${py}</span><b style="float:right">${divY?'+'+fmt(divY):'—'}</b>
+    </div>
+    <div class="act2">
+      <button type="button" style="border-color:rgba(29,158,117,.45);color:var(--pos)" onclick="openRenfort(${id})"><i class="ti ti-plus"></i> Renforcer</button>
+      <button type="button" style="border-color:rgba(216,90,48,.45);color:var(--neg)" onclick="openAllege(${id})"><i class="ti ti-minus"></i> Alléger</button>
+    </div>
+    <div class="act2">
+      <button type="button" onclick="openPosForm(${id})"><i class="ti ti-edit"></i> Modifier</button>
+      <button type="button" onclick="openDivForm(null,${id})"><i class="ti ti-coin"></i> Dividende</button>
+    </div>`,null);
+}
+
+// ---- Renforcer : recalcule le PRU moyen pondéré ----
+function openRenfort(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  openOv('Renforcer '+p.nom,`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Quantité achetée</label><input class="fi" id="rfQ" type="number" step="0.0001" inputmode="decimal" placeholder="0" oninput="rfCalc(${id})"></div>
+      <div class="fg"><label class="fl">Prix d'achat (€)</label><input class="fi" id="rfP" type="number" step="0.01" inputmode="decimal" value="${p.cours||''}" oninput="rfCalc(${id})"></div>
+    </div>
+    <div id="rfBox"></div>
+    <button type="button" class="sbtn" onclick="doRenfort(${id})">Confirmer l'achat</button>`,null);
+  setTimeout(()=>rfCalc(id),60);
+}
+function rfCalc(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  const q=parseFloat((document.getElementById('rfQ')||{}).value)||0;
+  const pr=parseFloat((document.getElementById('rfP')||{}).value)||0;
+  const box=document.getElementById('rfBox');if(!box)return;
+  if(!q||!pr){box.innerHTML='';return;}
+  const nq=p.qte+q, npru=((p.qte*p.pru)+(q*pr))/nq;
+  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:8px">
+    <span class="mut">Montant investi</span><b style="float:right">${fmt(q*pr)}</b><br>
+    <span class="mut">Quantité</span><b style="float:right">${p.qte} → <span class="g">${+nq.toFixed(4)}</span></b><br>
+    <span class="mut">PRU moyen</span><b style="float:right">${fmt(p.pru)} → <span class="g">${fmt(npru)}</span></b><br>
+    <span class="mut">Nouvelle valeur</span><b style="float:right">${fmt(nq*p.cours)}</b>
+  </div>
+  <div style="font-size:10.5px;color:var(--tx2);line-height:1.5;margin-bottom:11px">PRU = (${+p.qte.toFixed(4)} × ${fmt(p.pru)} + ${q} × ${fmt(pr)}) ÷ ${+nq.toFixed(4)}</div>`;
+}
+function doRenfort(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  const q=parseFloat(document.getElementById('rfQ').value)||0;
+  const pr=parseFloat(document.getElementById('rfP').value)||0;
+  if(!q||!pr)return;
+  const nq=p.qte+q;
+  p.pru=+(((p.qte*p.pru)+(q*pr))/nq).toFixed(4);
+  p.qte=+nq.toFixed(4);
+  sv();closeOv();renderPea();
+}
+
+// ---- Alléger : le PRU ne bouge pas ----
+function openAllege(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  openOv('Alléger '+p.nom,`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Quantité vendue</label><input class="fi" id="alQ" type="number" step="0.0001" inputmode="decimal" placeholder="0" oninput="alCalc(${id})"></div>
+      <div class="fg"><label class="fl">Prix de vente (€)</label><input class="fi" id="alP" type="number" step="0.01" inputmode="decimal" value="${p.cours||''}" oninput="alCalc(${id})"></div>
+    </div>
+    <div id="alBox"></div>
+    <label class="chk"><input type="checkbox" id="alLiq" checked> Ajouter le produit aux liquidités</label>
+    <button type="button" class="sbtn" onclick="doAllege(${id})">Confirmer la vente</button>`,null);
+  setTimeout(()=>alCalc(id),60);
+}
+function alCalc(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  const q=parseFloat((document.getElementById('alQ')||{}).value)||0;
+  const pr=parseFloat((document.getElementById('alP')||{}).value)||0;
+  const box=document.getElementById('alBox');if(!box)return;
+  if(!q||!pr){box.innerHTML='';return;}
+  const nq=Math.max(0,p.qte-q);
+  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+    <span class="mut">Produit de la vente</span><b style="float:right">${fmt(q*pr)}</b><br>
+    <span class="mut">Quantité</span><b style="float:right">${p.qte} → <span class="r">${+nq.toFixed(4)}</span></b><br>
+    <span class="mut">PRU moyen</span><b style="float:right">${fmt(p.pru)} <span class="mut">inchangé</span></b><br>
+    <span class="mut">Nouvelle valeur</span><b style="float:right">${fmt(nq*p.cours)}</b>
+  </div>${q>p.qte?'<div class="warnbox"><i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0"></i><div>Tu vends plus que tu ne détiens. La position sera soldée.</div></div>':''}`;
+}
+function doAllege(id){
+  const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
+  const q=parseFloat(document.getElementById('alQ').value)||0;
+  const pr=parseFloat(document.getElementById('alP').value)||0;
+  if(!q||!pr)return;
+  const liq=document.getElementById('alLiq');
+  if(liq&&liq.checked)D.pea.liquidites=+((D.pea.liquidites||0)+q*pr).toFixed(2);
+  p.qte=+Math.max(0,p.qte-q).toFixed(4);
+  if(p.qte<=0)D.pea.positions=D.pea.positions.filter(x=>x.id!==id);
+  sv();closeOv();renderPea();
+}
+
+// ---- Dividende ----
+function openDivForm(id,posId){
+  const ex=id!=null?(D.pea.dividendes||[]).find(d=>d.id===id):null;
+  const pos=D.pea.positions||[];
+  if(!pos.length){openOv('Dividende',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)">Ajoute d'abord une position.</div>`,null);return;}
+  const sel=ex?ex.posId:(posId!=null?posId:pos[0].id);
+  openOv(ex?'Modifier le dividende':'Dividende encaissé',`
+    <div class="fg"><label class="fl">Position</label>
+      <select class="fs" id="dvPos">${pos.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.nom}</option>`).join('')}</select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="dvDate" type="date" value="${ex?ex.date:todayISO()}"></div>
+      <div class="fg"><label class="fl">Montant net (€)</label><input class="fi" id="dvMt" type="number" step="0.01" inputmode="decimal" value="${ex?ex.montant:''}" placeholder="0.00" oninput="dvCalc()"></div>
+    </div>
+    <div id="dvBox"></div>
+    <label class="chk"><input type="checkbox" id="dvLiq" ${ex?'':'checked'}> Ajouter aux liquidités du PEA</label>
+    <button type="button" class="sbtn" onclick="saveDiv(${ex?ex.id:'null'})">Enregistrer</button>`,
+    ex?()=>{D.pea.dividendes=D.pea.dividendes.filter(d=>d.id!==ex.id);sv();renderPea();}:null);
+  setTimeout(dvCalc,60);
+}
+function dvCalc(){
+  const box=document.getElementById('dvBox');if(!box)return;
+  const mt=parseFloat((document.getElementById('dvMt')||{}).value)||0;
+  const pid=parseInt((document.getElementById('dvPos')||{}).value);
+  const p=(D.pea.positions||[]).find(x=>x.id===pid);
+  const y=String(py),tot=(D.pea.dividendes||[]).filter(d=>d.date.startsWith(y)).reduce((a,d)=>a+d.montant,0);
+  box.innerHTML=mt?`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+    ${p&&p.qte?`<span class="mut">Soit par titre</span><b style="float:right">${fmt(mt/p.qte)}</b><br>`:''}
+    <span class="mut">Total ${y}</span><b style="float:right;color:var(--pos)">+${fmt(tot+mt)}</b>
+  </div>`:'';
+}
+function saveDiv(id){
+  const pid=parseInt(document.getElementById('dvPos').value);
+  const date=document.getElementById('dvDate').value;
+  const mt=parseFloat(document.getElementById('dvMt').value)||0;
+  if(!date||mt<=0)return;
+  if(!D.pea.dividendes)D.pea.dividendes=[];
+  if(id!=null){const d=D.pea.dividendes.find(x=>x.id===id);if(d){d.posId=pid;d.date=date;d.montant=mt;}}
+  else{
+    D.pea.dividendes.push({id:nid(),posId:pid,date,montant:mt});
+    const liq=document.getElementById('dvLiq');
+    if(liq&&liq.checked)D.pea.liquidites=+((D.pea.liquidites||0)+mt).toFixed(2);
+  }
+  sv();closeOv();renderPea();
+}
+
+// ---- Liquidités ----
+function openLiquid(){
+  openOv('Liquidités du PEA',`
+    <div class="fg"><label class="fl">Montant non investi (€)</label>
+      <input class="fi" id="lqMt" type="number" step="0.01" inputmode="decimal" value="${D.pea.liquidites||0}" style="font-size:19px;text-align:center;font-weight:600"></div>
+    <div style="font-size:11px;color:var(--tx2);line-height:1.55;margin-bottom:12px">
+      Cash disponible sur le compte-espèces, en attente d'investissement.</div>
+    <button type="button" class="sbtn" onclick="saveLiquid()">Enregistrer</button>`,null);
+}
+function saveLiquid(){
+  D.pea.liquidites=+(parseFloat(document.getElementById('lqMt').value)||0).toFixed(2);
+  sv();closeOv();renderPea();
+}
+
+// ---- Menu du portefeuille ----
+function openPeaMenu(){
+  if(peaRO){openOv('Portefeuille',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)"><i class="ti ti-lock"></i> Mois figé — lecture seule.</div>`,null);return;}
+  openOv('Portefeuille PEA',
+    bkMenuRow('peaMenuCours','#6C5CE7','ti-refresh','Mettre à jour les cours','Tous les cours sur un écran')+
+    bkMenuRow('peaMenuAdd','#1D9E75','ti-plus','Ajouter une position','Nouveau titre ou ETF')+
+    bkMenuRow('peaMenuLiq','#E0A32E','ti-cash','Modifier les liquidités',fmt(D.pea.liquidites||0))+
+    bkMenuRow('peaMenuClear','#D85A30','ti-trash','Vider le portefeuille','Supprime toutes les positions',true)
+  ,null);
+}
+function peaMenuCours(){closeOv();setTimeout(openCoursForm,60);}
+function peaMenuAdd(){closeOv();setTimeout(openPosForm,60);}
+function peaMenuLiq(){closeOv();setTimeout(openLiquid,60);}
+function peaMenuClear(){closeOv();setTimeout(peaVider,60);}
+function peaVider(){
+  openOv('Vider le portefeuille',`<div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">
+    Toutes les positions et les dividendes seront supprimés. La valeur de ton PEA dans le patrimoine ne change pas.</div>
+    <button type="button" class="sbtn" style="background:#D85A30" onclick="peaViderGo()">Confirmer</button>
+    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>`,null);
+}
+function peaViderGo(){D.pea={positions:[],liquidites:0,dividendes:[]};sv();closeOv();renderPea();}
+
+// ---- Mise à jour groupée des cours ----
+function openCoursForm(){
+  const pos=D.pea.positions||[];
+  if(!pos.length){openOv('Cours',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)">Aucune position à mettre à jour.</div>`,null);return;}
+  openOv('Mettre à jour les cours',
+    pos.map(p=>`<div class="fg"><label class="fl">${p.nom} · actuel ${fmt(p.cours)}</label>
+      <input class="fi" id="cr${p.id}" type="number" step="0.01" inputmode="decimal" value="${p.cours}" oninput="crCalc()"></div>`).join('')+
+    `<div id="crBox"></div><button type="button" class="sbtn" onclick="saveCours()">Appliquer</button>`,null);
+  setTimeout(crCalc,60);
+}
+function crCalc(){
+  const box=document.getElementById('crBox');if(!box)return;
+  const av=(D.pea.positions||[]).reduce((a,p)=>a+peaVal(p),0);
+  let ap=0;
+  (D.pea.positions||[]).forEach(p=>{
+    const e=document.getElementById('cr'+p.id);
+    ap+=(p.qte||0)*(e?(parseFloat(e.value)||0):p.cours);
+  });
+  const df=ap-av;
+  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+    <span class="mut">Valeur avant</span><b style="float:right">${fmt(av)}</b><br>
+    <span class="mut">Valeur après</span><b style="float:right">${fmt(ap)}</b><br>
+    <span class="mut">Variation</span><b style="float:right;color:${df>=0?'var(--pos)':'var(--neg)'}">${df>=0?'+':'−'}${fmt(Math.abs(df))}</b>
+  </div>`;
+}
+function saveCours(){
+  (D.pea.positions||[]).forEach(p=>{
+    const e=document.getElementById('cr'+p.id);
+    if(e){const v=parseFloat(e.value);if(!isNaN(v)&&v>=0)p.cours=v;}
+  });
+  sv();closeOv();renderPea();
+}
+
 // ============ MODULE BRICKS ============
 let bkLineId=null;          // id de la ligne "capital" ouverte
 const MSHORT=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
@@ -1304,7 +1880,7 @@ function openMvForm(id){
         ${Object.entries(MV_META).map(([k,v])=>`<div class="chip${t===k?' on':''}" onclick="selChip(this);mvRefresh()" data-mv="${k}">${v.lbl.replace(' vers ma banque','')}</div>`).join('')}
       </div>
     </div>
-    <div class="f2" style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
       <div class="fg"><label class="fl">Date</label><input class="fi" id="mvDate" type="date" value="${ex?ex.date:todayISO()}" onchange="mvRefresh()"></div>
       <div class="fg"><label class="fl">Montant (€)</label><input class="fi" id="mvMt" type="number" step="0.01" inputmode="decimal" value="${ex?ex.montant:''}" placeholder="0.00" oninput="mvRefresh()"></div>
     </div>
@@ -1496,7 +2072,7 @@ function renderH(){
   all.sort((a,b2)=>b2.id-a.id);
   let h='';
   all.forEach(item=>{const c=item._s>0?'#1D9E75':'#D85A30',sg=item._s>0?'+':'−';
-    h+=`<div class="pr"><div class="pn"><div class="pa">${item.nom}</div><div class="pb">${[item.compte,item.date,item.statut].filter(Boolean).join(' · ')}</div></div><div class="pv" style="color:${c}">${sg}${fmt(item.montant)}</div></div>`;});
+    h+=`<div class="pr"><div class="pn"><div class="pa">${item.nom}</div><div class="pb">${[item.compte,dAff(item.date),item.statut].filter(Boolean).join(' · ')}</div></div><div class="pv" style="color:${c}">${sg}${fmt(item.montant)}</div></div>`;});
   document.getElementById('hlist').innerHTML=h;
 }
 
@@ -1519,7 +2095,7 @@ function bForm(item,section){
   const cOpts=cpts.map(c=>`<option ${item&&item.compte===c?'selected':''}>${c}</option>`).join('');
   const cChips=Object.entries(cats).map(([k,v])=>`<div class="chip${section===k?' on':''}" onclick="selChip(this)" data-cat="${k}">${v}</div>`).join('');
   const df=cat.nd?'':
-    `<div class="fg"><label class="fl">Date (JJ/MM)</label><input class="fi" id="fd" value="${item&&item.date?item.date:''}" placeholder="Ex: 15/05" maxlength="5"></div>`;
+    `<div class="fg"><label class="fl">Date</label><input class="fi" id="fd" type="date" value="${item&&item.date?(isISO(item.date)?item.date:toISO(item.date,bk(cm,cy))):todayISO()}"></div>`;
   const sf=cat.ns?'':
     `<div class="fg"><label class="fl">Statut</label><select class="fs" id="fst">${sts.map(s=>`<option ${item&&item.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
   return`<div class="fg"><label class="fl">Catégorie</label><div class="chips">${cChips}</div></div>
@@ -1574,7 +2150,7 @@ function svP(section){
 }
 
 function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;migrerDates();sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
 // Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
