@@ -25,7 +25,7 @@
         --accsoft:rgba(108,92,231,.18);--pos:#22C55E;--neg:#FB7185;}
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:pan-x pan-y}
-body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
+body{font-family:var(--font);background:var(--bg3);color:var(--tx1);padding-bottom:calc(72px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
 .app{max-width:430px;margin:0 auto}
 .nav{display:flex;background:var(--bg1);border-top:.5px solid var(--bd1);position:fixed;bottom:0;left:0;right:0;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
 .nb{flex:1;padding:10px 0 8px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--tx2);font-family:var(--font)}
@@ -83,11 +83,16 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end;justify-content:center}
 .ov.on{display:flex}
 .sh{background:var(--bg1);border-radius:20px 20px 0 0;padding:20px 18px calc(36px + env(safe-area-inset-bottom));width:100%;max-width:430px;max-height:92vh;overflow-y:auto}
-.shn{width:36px;height:4px;border-radius:2px;background:var(--bd2);margin:0 auto 18px}
+.shn{width:40px;height:4px;border-radius:2px;background:var(--bd2);display:block;margin:0 auto}
+.shn-btn{display:block;width:100%;padding:4px 0 14px;background:transparent;border:none;cursor:pointer;font-family:inherit}
+.shx{width:30px;height:30px;border-radius:50%;background:var(--bg2);border:none;color:var(--tx2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.sha{gap:10px}
 .sha{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .shd{background:transparent;border:none;cursor:pointer;color:#D85A30;font-size:14px;display:flex;align-items:center;gap:4px;font-family:var(--font);padding:0}
 .fg{margin-bottom:13px;min-width:0}
-.fi,.fs{max-width:100%}
+.fi,.fs{max-width:100%;min-width:0}
+input[type="date"].fi{-webkit-appearance:none;appearance:none;min-width:0;width:100%;display:block;text-align:left}
+.sgrid,.f2{min-width:0}
 .fl{font-size:12px;color:var(--tx2);margin-bottom:5px;display:block}
 .fi{width:100%;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd2);background:var(--bg2);font-size:15px;color:var(--tx1);font-family:var(--font)}
 .fs{width:100%;padding:10px 12px;border-radius:var(--r2);border:.5px solid var(--bd2);background:var(--bg2);font-size:15px;color:var(--tx1);font-family:var(--font)}
@@ -108,7 +113,7 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .pn{flex:1;min-width:0}
 .pa{font-size:13px;font-weight:500;color:var(--tx1)}
 .pb{font-size:11px;color:var(--tx2)}
-.pv{font-size:13px;font-weight:500;white-space:nowrap}
+.pv{font-size:13px;font-weight:500;white-space:nowrap;color:var(--tx1)}
 .pe{font-size:11px;margin-left:4px}
 /* Calendrier */
 .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 0 8px}
@@ -235,8 +240,25 @@ input:checked+.tslider:before{transform:translateX(20px)}
 .sw.on:after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
 .sw.on{box-shadow:0 0 0 2px var(--bg1),0 0 0 4px var(--acc)}
 .bigtile{width:60px;height:60px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0}
-.act2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.act2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:9px}
 .act2 button{padding:11px;border-radius:11px;font-size:12.5px;font-weight:500;border:1px solid var(--bd2);background:var(--bg2);color:var(--tx1);display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;cursor:pointer}
+
+/* --- Demi-anneau PEA --- */
+#peaArc svg{display:block;width:100%;height:auto}
+.arc-tot{text-align:center;margin:-6px 0 14px}
+.arc-v{font-size:18px;font-weight:600;color:var(--tx1);letter-spacing:-.02em}
+.arc-l{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx2);margin-top:3px}
+.plg2{display:flex;align-items:center;gap:9px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd1)}
+.plg2:last-child{border-bottom:none}
+.plg2 .nm{flex:1;color:var(--tx1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plg2 .pc{font-weight:600;color:var(--tx1)}
+.plg2 .am{color:var(--tx2);font-size:10.5px;min-width:62px;text-align:right}
+.plg2 .dt{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+/* --- Barres tactiles --- */
+.dvhead{margin-bottom:11px;min-height:42px}
+.dvlbl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)}
+.dvval{font-size:20px;font-weight:600;margin-top:3px;color:var(--pos)}
+.dvbars i{transition:opacity .12s}
 </style>
 </head>
 <body>
@@ -342,8 +364,9 @@ input:checked+.tslider:before{transform:translateX(20px)}
     <div class="scard"><div class="slbl">Performance</div><div class="sval" id="peaPerf">—</div></div>
   </div>
   <div class="chart-card" id="peaRepCard">
-    <div class="stackbar" id="peaStack"></div>
-    <div class="legend" id="peaLeg"></div>
+    <div id="peaArc"></div>
+    <div class="arc-tot"><div class="arc-v" id="peaArcTot">0 €</div><div class="arc-l">Total</div></div>
+    <div id="peaLeg"></div>
   </div>
   <div class="stl" style="display:flex;justify-content:space-between;align-items:center">
     <span>Positions</span><span class="mut" id="peaCount" style="text-transform:none;letter-spacing:0"></span>
@@ -378,6 +401,10 @@ input:checked+.tslider:before{transform:translateX(20px)}
   </div>
   <div class="stl">Dividendes par mois</div>
   <div class="chart-card" id="bkChartCard">
+    <div class="dvhead">
+      <div class="dvlbl" id="bkDvL">Total perçu</div>
+      <div class="dvval" id="bkDvV">—</div>
+    </div>
     <div class="dvbars" id="bkBars"></div>
     <div class="dvx" id="bkBx"></div>
   </div>
@@ -396,10 +423,11 @@ input:checked+.tslider:before{transform:translateX(20px)}
 
 <div class="ov" id="ov" onclick="closeOv(event)">
   <div class="sh">
-    <div class="shn"></div>
+    <button type="button" class="shn-btn" onclick="closeOv()" aria-label="Fermer"><span class="shn"></span></button>
     <div class="sha">
       <div id="sht" style="font-size:16px;font-weight:500;color:var(--tx1)">Ajouter</div>
       <button class="shd" id="shdb" style="display:none" onclick="execDel()"><i class="ti ti-trash" style="font-size:16px"></i> Supprimer</button>
+      <button type="button" class="shx" onclick="closeOv()" aria-label="Fermer"><i class="ti ti-x"></i></button>
     </div>
     <div id="shb"></div>
   </div>
@@ -1368,16 +1396,35 @@ function renderPea(){
   }
   document.getElementById('peaWarn').innerHTML=w;
 
-  // Répartition
+  // Répartition en demi-anneau
   const rep=document.getElementById('peaRepCard');
   if(tot>0){
     rep.style.display='';
     const parts=(pea.positions||[]).map(p=>({n:p.nom,v:peaVal(p),c:p.col||'#5A6570'})).filter(x=>x.v>0)
       .sort((a,b)=>b.v-a.v);
     if((pea.liquidites||0)>0)parts.push({n:'Liquidités',v:pea.liquidites,c:'#5A6570'});
-    document.getElementById('peaStack').innerHTML=parts.map(x=>`<i style="width:${x.v/tot*100}%;background:${x.c}"></i>`).join('');
+    // Géométrie : demi-cercle du haut, de gauche à droite
+    function pol(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+    function seg(rO,rI,s,e){
+      const[x1,y1]=pol(100,100,rO,s),[x2,y2]=pol(100,100,rO,e),lg=(e-s)>180?1:0;
+      const[x3,y3]=pol(100,100,rI,e),[x4,y4]=pol(100,100,rI,s);
+      return`M${x1.toFixed(2)},${y1.toFixed(2)} A${rO},${rO} 0 ${lg} 1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${rI},${rI} 0 ${lg} 0 ${x4.toFixed(2)},${y4.toFixed(2)} Z`;
+    }
+    let ang=-90;const paths=[];
+    parts.forEach(x=>{
+      const sw=(x.v/tot)*180;                       // 180° au lieu de 360
+      const s=ang+0.9,e=Math.max(ang+sw-0.9,ang+1.1);
+      paths.push(`<path d="${seg(88,62,s,e)}" fill="${x.c}"/>`);
+      ang+=sw;
+    });
+    document.getElementById('peaArc').innerHTML=
+      `<svg viewBox="0 6 200 100" role="img" aria-label="Répartition du portefeuille"><g transform="translate(0,6)">${paths.join('')}</g></svg>`;
+    document.getElementById('peaArcTot').textContent=fmt(tot);
     document.getElementById('peaLeg').innerHTML=parts.map(x=>
-      `<span class="leg-item"><span class="leg-dot" style="background:${x.c}"></span><span style="color:var(--tx2)">${x.n} <strong style="color:var(--tx1)">${Math.round(x.v/tot*100)}%</strong></span></span>`).join('');
+      `<div class="plg2"><span class="dt" style="background:${x.c}"></span>
+        <span class="nm">${x.n}</span>
+        <span class="pc">${Math.round(x.v/tot*100)} %</span>
+        <span class="am">${fmk(x.v)}</span></div>`).join('');
   } else rep.style.display='none';
 
   renderPeaList(pea);
@@ -1452,11 +1499,11 @@ function openPosForm(id){
       <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--tx1)" id="posName">${ex?ex.nom:'Nouvelle position'}</div>
       <div style="font-size:11px;margin-top:3px" id="posDetect"></div></div>
     </div>
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Nom</label><input class="fi" id="pfNom" value="${ex?ex.nom:''}" placeholder="Ex : Air Liquide" oninput="posRefresh()"></div>
       <div class="fg"><label class="fl">Code</label><input class="fi" id="pfCode" value="${ex&&ex.code?ex.code:''}" placeholder="AI"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Quantité</label><input class="fi" id="pfQte" type="number" step="0.0001" inputmode="decimal" value="${ex?ex.qte:''}" placeholder="0" oninput="posRefresh()"></div>
       <div class="fg"><label class="fl">Cours actuel (€)</label><input class="fi" id="pfCours" type="number" step="0.01" inputmode="decimal" value="${ex?ex.cours:''}" placeholder="0.00" oninput="posRefresh()"></div>
     </div>
@@ -1494,7 +1541,7 @@ function posRefresh(){
   const cEl=document.getElementById('posCalc');
   if(cEl){
     const val=q*co,pv=val-q*pr,inv=q*pr;
-    cEl.innerHTML=val?`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">
+    cEl.innerHTML=val?`<div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">
       <span class="mut">Valeur</span><b style="float:right">${fmt(val)}</b>
       ${inv?`<br><span class="mut">Plus-value</span><b style="float:right;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${fmt(Math.abs(pv))} · ${pv>=0?'+':'−'}${Math.abs(pv/inv*100).toFixed(1)} %</b>`:''}
     </div>`:'';
@@ -1528,7 +1575,7 @@ function openPosMenu(id){
       <div style="text-align:right"><div style="font-size:16px;font-weight:600;color:var(--tx1)">${fmt(peaVal(p))}</div>
         ${inv?`<div style="font-size:11.5px;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${Math.abs(pv/inv*100).toFixed(1)} %</div>`:''}</div>
     </div>
-    <div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.95;margin-bottom:12px">
+    <div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.95;margin-bottom:12px">
       <span class="mut">Cours actuel</span><b style="float:right">${fmt(p.cours)}</b><br>
       <span class="mut">Prix de revient</span><b style="float:right">${p.pru?fmt(p.pru):'—'}</b><br>
       <span class="mut">Plus-value</span><b style="float:right;color:${pv>=0?'var(--pos)':'var(--neg)'}">${pv>=0?'+':'−'}${fmt(Math.abs(pv))}</b><br>
@@ -1548,7 +1595,7 @@ function openPosMenu(id){
 function openRenfort(id){
   const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
   openOv('Renforcer '+p.nom,`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Quantité achetée</label><input class="fi" id="rfQ" type="number" step="0.0001" inputmode="decimal" placeholder="0" oninput="rfCalc(${id})"></div>
       <div class="fg"><label class="fl">Prix d'achat (€)</label><input class="fi" id="rfP" type="number" step="0.01" inputmode="decimal" value="${p.cours||''}" oninput="rfCalc(${id})"></div>
     </div>
@@ -1563,7 +1610,7 @@ function rfCalc(id){
   const box=document.getElementById('rfBox');if(!box)return;
   if(!q||!pr){box.innerHTML='';return;}
   const nq=p.qte+q, npru=((p.qte*p.pru)+(q*pr))/nq;
-  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:8px">
+  box.innerHTML=`<div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:8px">
     <span class="mut">Montant investi</span><b style="float:right">${fmt(q*pr)}</b><br>
     <span class="mut">Quantité</span><b style="float:right">${p.qte} → <span class="g">${+nq.toFixed(4)}</span></b><br>
     <span class="mut">PRU moyen</span><b style="float:right">${fmt(p.pru)} → <span class="g">${fmt(npru)}</span></b><br>
@@ -1586,7 +1633,7 @@ function doRenfort(id){
 function openAllege(id){
   const p=D.pea.positions.find(x=>x.id===id);if(!p)return;
   openOv('Alléger '+p.nom,`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Quantité vendue</label><input class="fi" id="alQ" type="number" step="0.0001" inputmode="decimal" placeholder="0" oninput="alCalc(${id})"></div>
       <div class="fg"><label class="fl">Prix de vente (€)</label><input class="fi" id="alP" type="number" step="0.01" inputmode="decimal" value="${p.cours||''}" oninput="alCalc(${id})"></div>
     </div>
@@ -1602,7 +1649,7 @@ function alCalc(id){
   const box=document.getElementById('alBox');if(!box)return;
   if(!q||!pr){box.innerHTML='';return;}
   const nq=Math.max(0,p.qte-q);
-  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+  box.innerHTML=`<div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
     <span class="mut">Produit de la vente</span><b style="float:right">${fmt(q*pr)}</b><br>
     <span class="mut">Quantité</span><b style="float:right">${p.qte} → <span class="r">${+nq.toFixed(4)}</span></b><br>
     <span class="mut">PRU moyen</span><b style="float:right">${fmt(p.pru)} <span class="mut">inchangé</span></b><br>
@@ -1630,7 +1677,7 @@ function openDivForm(id,posId){
   openOv(ex?'Modifier le dividende':'Dividende encaissé',`
     <div class="fg"><label class="fl">Position</label>
       <select class="fs" id="dvPos">${pos.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.nom}</option>`).join('')}</select></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Date</label><input class="fi" id="dvDate" type="date" value="${ex?ex.date:todayISO()}"></div>
       <div class="fg"><label class="fl">Montant net (€)</label><input class="fi" id="dvMt" type="number" step="0.01" inputmode="decimal" value="${ex?ex.montant:''}" placeholder="0.00" oninput="dvCalc()"></div>
     </div>
@@ -1646,7 +1693,7 @@ function dvCalc(){
   const pid=parseInt((document.getElementById('dvPos')||{}).value);
   const p=(D.pea.positions||[]).find(x=>x.id===pid);
   const y=String(py),tot=(D.pea.dividendes||[]).filter(d=>d.date.startsWith(y)).reduce((a,d)=>a+d.montant,0);
-  box.innerHTML=mt?`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+  box.innerHTML=mt?`<div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
     ${p&&p.qte?`<span class="mut">Soit par titre</span><b style="float:right">${fmt(mt/p.qte)}</b><br>`:''}
     <span class="mut">Total ${y}</span><b style="float:right;color:var(--pos)">+${fmt(tot+mt)}</b>
   </div>`:'';
@@ -1721,7 +1768,7 @@ function crCalc(){
     ap+=(p.qte||0)*(e?(parseFloat(e.value)||0):p.cours);
   });
   const df=ap-av;
-  box.innerHTML=`<div style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
+  box.innerHTML=`<div style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:11px">
     <span class="mut">Valeur avant</span><b style="float:right">${fmt(av)}</b><br>
     <span class="mut">Valeur après</span><b style="float:right">${fmt(ap)}</b><br>
     <span class="mut">Variation</span><b style="float:right;color:${df>=0?'var(--pos)':'var(--neg)'}">${df>=0?'+':'−'}${fmt(Math.abs(df))}</b>
@@ -1823,14 +1870,72 @@ function renderBkChart(){
   }
   const mx=Math.max(...serie.map(s=>s.v))||1;
   const moy=serie.filter(s=>s.v>0).reduce((a,s)=>a+s.v,0)/Math.max(1,serie.filter(s=>s.v>0).length);
-  document.getElementById('bkBars').innerHTML=serie.map(s=>{
-    if(s.v===0)return `<i style="height:6%;background:rgba(216,90,48,.45)" title="${s.k} · aucun versement"></i>`;
-    const col=s.v>moy*1.5?'#22C55E':'rgba(34,197,94,.55)';
-    return `<i style="height:${Math.max(8,s.v/mx*100)}%;background:${col}" title="${s.k} · ${fmt(s.v)}"></i>`;
-  }).join('');
+  _bkSerie={serie,mx,moy,total:serie.reduce((a,s)=>a+s.v,0),nb:serie.filter(s=>s.v>0).length};
+  bkDrawBars(null);
+  bkResetHead();
   const lbl=k=>{const[a,b]=k.split('-');return MSHORT[+b-1]+' '+a.slice(2);};
   document.getElementById('bkBx').innerHTML=`<span>${lbl(first)}</span><span>${lbl(last)}</span>`;
+  // Interaction tactile
+  const zone=document.getElementById('bkBars');
+  const idxAt=e=>{
+    const r=zone.getBoundingClientRect();
+    if(!r.width)return null;
+    const raw=e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX;
+    if(typeof raw!=='number'||isNaN(raw))return null;
+    const i=Math.floor((raw-r.left)/r.width*serie.length);
+    return Math.max(0,Math.min(serie.length-1,i));
+  };
+  zone.onpointerdown=e=>{_bkActif=true;const i=idxAt(e);if(i!=null)bkShow(i);};
+  zone.onpointermove=e=>{if(!_bkActif)return;const i=idxAt(e);if(i!=null)bkShow(i);};
 }
+
+
+// ---- Barres de dividendes tactiles ----
+let _bkSerie=null,_bkActif=false,_bkTimer=null;
+function bkDrawBars(sel){
+  if(!_bkSerie)return;
+  const{serie,mx,moy}=_bkSerie;
+  document.getElementById('bkBars').innerHTML=serie.map((s,i)=>{
+    const op=(sel!=null&&sel!==i)?'.35':'1';
+    if(s.v===0)return`<i style="height:7%;background:rgba(216,90,48,.5);opacity:${op}"></i>`;
+    const col=s.v>moy*1.5?'#22C55E':'rgba(34,197,94,.55)';
+    return`<i style="height:${Math.max(9,s.v/mx*100)}%;background:${col};opacity:${op}"></i>`;
+  }).join('');
+}
+function bkResetHead(){
+  if(!_bkSerie)return;
+  const L=document.getElementById('bkDvL'),V=document.getElementById('bkDvV');
+  if(!L||!V)return;
+  L.textContent='Total perçu';
+  V.textContent='+'+fmt(_bkSerie.total);
+  V.style.color='var(--pos)';
+  bkDrawBars(null);
+}
+function bkShow(i){
+  if(!_bkSerie)return;
+  const s=_bkSerie.serie[i];if(!s)return;
+  const[y,m]=s.k.split('-');
+  const L=document.getElementById('bkDvL'),V=document.getElementById('bkDvV');
+  if(!L||!V)return;
+  L.textContent=MSHORT[+m-1]+' '+y;
+  if(s.v>0){V.textContent='+'+fmt(s.v);V.style.color='var(--pos)';}
+  else{V.textContent='aucun versement';V.style.color='var(--neg)';}
+  bkDrawBars(i);
+  clearTimeout(_bkTimer);
+}
+// Relâchement : retour au total après un court instant
+document.addEventListener('pointerup',()=>{
+  if(!_bkActif)return;
+  _bkActif=false;
+  clearTimeout(_bkTimer);
+  _bkTimer=setTimeout(bkResetHead,1100);
+});
+// Appui hors du graphique : retour immédiat
+document.addEventListener('pointerdown',e=>{
+  const card=document.getElementById('bkChartCard');
+  if(!card||!_bkSerie)return;
+  if(!card.contains(e.target)){clearTimeout(_bkTimer);bkResetHead();}
+});
 
 const MV_META={
   div:   {ic:'ti-coin',            col:'#1D9E75', lbl:'Dividende',              sign:'+'},
@@ -1880,7 +1985,7 @@ function openMvForm(id){
         ${Object.entries(MV_META).map(([k,v])=>`<div class="chip${t===k?' on':''}" onclick="selChip(this);mvRefresh()" data-mv="${k}">${v.lbl.replace(' vers ma banque','')}</div>`).join('')}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
       <div class="fg"><label class="fl">Date</label><input class="fi" id="mvDate" type="date" value="${ex?ex.date:todayISO()}" onchange="mvRefresh()"></div>
       <div class="fg"><label class="fl">Montant (€)</label><input class="fi" id="mvMt" type="number" step="0.01" inputmode="decimal" value="${ex?ex.montant:''}" placeholder="0.00" oninput="mvRefresh()"></div>
     </div>
@@ -1917,7 +2022,7 @@ function mvRefresh(){
   }
   // Mouvement du mois en cours : on montre l'effet et on propose l'écriture
   const vCap=cap?cap.valeur:0,vSol=sol?sol.valeur:0;
-  let h='<div class="calc" style="background:var(--bg2);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">';
+  let h='<div class="calc" style="background:var(--bg2);color:var(--tx1);border-radius:10px;padding:11px;font-size:12px;line-height:1.9;margin-bottom:12px">';
   if(type==='div'){
     h+=`<span class="mut">Solde Bricks</span><b style="float:right">${fmt(vSol)} → <span class="g">${fmt(vSol+mt)}</span></b><br>
         <span class="mut">Capital</span><b style="float:right">${fmt(vCap)} <span class="mut">inchangé</span></b>`;
