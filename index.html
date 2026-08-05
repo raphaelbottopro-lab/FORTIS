@@ -259,6 +259,33 @@ input:checked+.tslider:before{transform:translateX(20px)}
 .dvlbl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)}
 .dvval{font-size:20px;font-weight:600;margin-top:3px;color:var(--pos)}
 .dvbars i{transition:opacity .12s}
+
+/* --- Ligne de détail sous les graphiques --- */
+.chart-info{display:flex;align-items:center;gap:8px;font-size:12px;min-height:34px;padding:9px 0 0;margin-top:10px;border-top:1px solid var(--bd1)}
+.ci-hint{color:var(--tx2);font-size:11.5px;display:flex;align-items:center;gap:6px}
+.ci-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.ci-n{flex:1;color:var(--tx1);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-p{font-weight:600;color:var(--tx1)}
+.ci-v{color:var(--tx2);font-size:11px;min-width:62px;text-align:right}
+.stackbar i,.htrack i,.dvbars i{transition:opacity .15s,width .35s ease}
+.stackbar i,.hb-seg{cursor:pointer}
+#peaArc path,#pdonut path{cursor:pointer;transition:opacity .15s}
+
+.zbwrap{position:relative;height:92px;display:flex;gap:5px;align-items:center;margin:8px 0 5px;touch-action:pan-y}
+.zbc{flex:1;height:100%;position:relative;cursor:pointer}
+.zbc i{position:absolute;left:0;right:0;border-radius:3px;transition:opacity .15s}
+.zline{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--bd2);pointer-events:none}
+.zbx{display:flex;gap:5px;font-size:8.5px;color:var(--tx2)}
+.zbx span{flex:1;text-align:center}
+.ep-moys{display:flex;gap:14px;font-size:11.5px;color:var(--tx2);margin-top:4px;flex-wrap:wrap}
+.ep-moys b{color:var(--tx1)}
+.ep-act{display:flex;align-items:center;gap:8px;font-size:12px;min-height:36px;padding:10px 0 0;margin-top:9px;border-top:1px solid var(--bd1)}
+.ep-act .lnk{color:var(--acc);font-weight:500;cursor:pointer;white-space:nowrap}
+.obj-row{display:flex;align-items:center;gap:9px;padding:11px 0;border-bottom:1px solid var(--bd1)}
+.lgchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.lgchip{display:flex;align-items:center;gap:5px;font-size:11px;background:var(--bg2);border-radius:8px;padding:5px 9px;color:var(--tx2);cursor:pointer;transition:opacity .15s}
+.lgchip b{color:var(--tx1)}
+.lgchip .sq{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -289,6 +316,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
     <div class="chart-card">
       <div class="stackbar" id="bstack"></div>
       <div id="bbars"></div>
+      <div class="chart-info" id="bInfo"></div>
       <div class="tot-row"><span style="color:var(--tx2)">Total dépenses</span><span style="font-weight:600;color:var(--tx1)" id="btot">0 €</span></div>
     </div>
   </div>
@@ -326,6 +354,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
     <div class="stl" style="margin-top:8px">Répartition de l'épargne</div>
     <div class="chart-card">
       <div class="dwrap"><div id="pdonut"></div><div class="dctr"><div class="dctr-v" id="pdtot">—</div><div class="dctr-l">Total</div></div></div>
+      <div class="chart-info" id="pInfo"></div>
       <div id="pleg"></div>
       <div class="tot-row"><span style="color:var(--tx2)">Total épargne + immo</span><span style="font-weight:600;color:var(--tx1)" id="ptot">0 €</span></div>
     </div>
@@ -366,6 +395,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
   <div class="chart-card" id="peaRepCard">
     <div id="peaArc"></div>
     <div class="arc-tot"><div class="arc-v" id="peaArcTot">0 €</div><div class="arc-l">Total</div></div>
+    <div class="chart-info" id="peaInfo"></div>
     <div id="peaLeg"></div>
   </div>
   <div class="stl" style="display:flex;justify-content:space-between;align-items:center">
@@ -397,6 +427,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
   </div>
   <div class="chart-card" id="bkRepCard">
     <div class="stackbar" id="bkStack"></div>
+    <div class="chart-info" id="bkInfo"></div>
     <div class="legend" id="bkLeg"></div>
   </div>
   <div class="stl">Dividendes par mois</div>
@@ -555,6 +586,8 @@ const DD=()=>({
     current:JSON.parse(JSON.stringify(buildSnaps()['2026-05'])),
     snapshots:buildSnaps(),drafts:{},editingMonth:'2026-05',
   },
+  objectifs:[],
+  retraitsExcept:[],
   objectifEpargne:200,
   bricks:{mouvements:[]},
   pea:{positions:[],liquidites:0,dividendes:[]},
@@ -582,6 +615,11 @@ function ld(){
       D=JSON.parse(s);
       // Migration snapshots manquants
       if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;
+      if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];
+      if(!Array.isArray(D.objectifs)||!D.objectifs.length){
+        const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();
+        D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];
+      }
       if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};
       if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};
       migrerDates();
@@ -626,6 +664,7 @@ function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='Planifié'?'#
 
 function go(s){
   document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.subpage').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('on'));
   document.getElementById('scr-'+s).classList.add('on');
   document.getElementById('tnb-'+s).classList.add('on');
@@ -863,15 +902,18 @@ function renderB(){
   // tri décroissant pour la lisibilité
   const idx=BVALS.map((v,i)=>i).sort((a,z)=>BVALS[z]-BVALS[a]);
   const pctOf=v=>tot>0?(v/tot*100):0;
-  document.getElementById('bstack').innerHTML=idx.filter(i=>BVALS[i]>0)
-    .map(i=>`<i style="width:${pctOf(BVALS[i])}%;background:${BCOLS[i]}"></i>`).join('');
-  document.getElementById('bbars').innerHTML=idx.map(i=>{
-    const p=pctOf(BVALS[i]);
-    return `<div class="hrow">
-      <div class="hhead"><span class="hname">${BLBLS[i]}</span><span class="hval">${fmk(BVALS[i])}</span><span class="hpc">${Math.round(p)} %</span></div>
-      <div class="htrack"><i style="width:${p}%;background:${BCOLS[i]}"></i></div>
+  const bparts=idx.map(i=>({n:BLBLS[i],v:BVALS[i],c:BCOLS[i]}));
+  chartReg('budget',bparts,tot||1,'bInfo');
+  document.getElementById('bstack').innerHTML=bparts.map((p,k)=>p.v>0
+    ?`<i data-ck="budget" data-ci="${k}" onpointerdown="chartPick('budget',${k},event)" style="width:${pctOf(p.v)}%;background:${gradBar(p.c)};box-shadow:${glowBar(p.c)}"></i>`:'').join('');
+  document.getElementById('bbars').innerHTML=bparts.map((p,k)=>{
+    const pp=pctOf(p.v);
+    return `<div class="hrow hb-seg" onpointerdown="chartPick('budget',${k},event)">
+      <div class="hhead"><span class="hname">${p.n}</span><span class="hval">${fmk(p.v)}</span><span class="hpc">${Math.round(pp)} %</span></div>
+      <div class="htrack"><i data-ck="budget" data-ci="${k}" style="width:${pp}%;background:${gradBar(p.c)};box-shadow:${glowBar(p.c)}"></i></div>
     </div>`;
   }).join('');
+  chartPaint('budget');
 }
 
 function osE(i){
@@ -1159,7 +1201,7 @@ function renderPatrimChart(snap){
     const sw=(it.v/tot)*360;
     const s=ang+gap/2,e=Math.max(ang+sw-gap/2,ang+gap/2+.4);
     defs.push(`<linearGradient id="pdg${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${lighten(it.c,38)}"/><stop offset="100%" stop-color="${it.c}"/></linearGradient>`);
-    paths.push(`<path d="${arcP(rO,rI,s,e)}" fill="url(#pdg${i})"/>`);
+    paths.push(`<path d="${arcP(rO,rI,s,e)}" fill="url(#pdg${i})" data-ck="patrim" data-ci="${i}" onpointerdown="chartPick('patrim',${i},event)"/>`);
     ang+=sw;
   });
   wrap.innerHTML=`<svg viewBox="0 0 200 200" role="img" aria-label="Répartition de l'épargne">
@@ -1171,6 +1213,7 @@ function renderPatrimChart(snap){
     <circle cx="100" cy="100" r="${railR}" fill="none" stroke="${railCol}" stroke-width="${railW}"/>
     <g filter="url(#pdglow)">${paths.join('')}</g>
   </svg>`;
+  chartReg('patrim',items.map(x=>({n:x.nm,v:x.v,c:x.c})),tot,'pInfo');chartPaint('patrim');
   leg.innerHTML=items.map(it=>`<div class="plg">
     <span class="dt" style="background:${it.c}"></span>
     <span class="nm">${it.nm}</span>
@@ -1187,23 +1230,63 @@ if(window.matchMedia){
 
 // ---- Paramètres patrimoine : objectif d'épargne mensuel ----
 function openPatrimSettings(){
-  const cur=D.objectifEpargne||0;
-  openOv('Paramètres patrimoine',`
-    <div class="fg"><label class="fl">Objectif d'épargne mensuel (€)</label>
-      <input class="fi" id="fobj" type="number" step="10" min="0" value="${cur}" inputmode="decimal" style="font-size:20px;text-align:center;font-weight:600">
+  const objs=(D.objectifs||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
+  const lbl=k=>{const[y,m]=k.split('-');return MN[parseInt(m)-1]+' '+y;};
+  const lignes=objs.map((o,i)=>`<div class="obj-row">
+    <div class="pi" style="background:${softGrad('#1D9E75')};box-shadow:inset 0 0 0 1px #1D9E7526"><i class="ti ti-target" style="color:#1D9E75"></i></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:500;color:var(--tx1)">${fmk(o.montant)} par mois</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:2px">à partir de ${lbl(o.from)}</div>
     </div>
-    <div style="font-size:11.5px;color:var(--tx2);line-height:1.55;margin-bottom:14px">
-      Montant que tu vises chaque mois sur tes livrets (Livret Jeune + LDD).
-      Il sert à colorer le calendrier et à projeter ton solde de fin d'année.
+    <button type="button" onpointerdown="objEdit(${i},event)" style="background:transparent;border:none;color:var(--tx2);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-edit"></i></button>
+    ${objs.length>1?`<button type="button" onpointerdown="objDel(${i},event)" style="background:transparent;border:none;color:var(--neg);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-trash"></i></button>`:''}
+  </div>`).join('');
+  openOv("Objectifs d'épargne",`
+    <div style="font-size:11.5px;color:var(--tx2);line-height:1.55;margin-bottom:10px">
+      Chaque mois est comparé à l'objectif en vigueur à sa date. Ajoute une période quand ton objectif change.
     </div>
-    <button class="sbtn" onclick="saveObjectif()">Enregistrer</button>
-  `,null);
-  setTimeout(()=>{const e=document.getElementById('fobj');if(e){e.focus();e.select();}},150);
+    ${lignes}
+    <button type="button" class="sbtn" style="background:transparent;border:1px solid var(--acc);color:var(--acc);margin-top:12px" onpointerdown="objEdit(null,event)">
+      <i class="ti ti-plus"></i> Nouvel objectif
+    </button>`,null);
 }
-function saveObjectif(){
-  const v=parseFloat(document.getElementById('fobj').value);
-  D.objectifEpargne=isNaN(v)||v<0?0:v;
+function objEdit(i,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  const objs=(D.objectifs||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
+  const o=(i!=null)?objs[i]:null;
+  const def=o?o.from:sk(pm,py);
+  closeOv();
+  setTimeout(()=>{
+    openOv(o?"Modifier l'objectif":"Nouvel objectif",`
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
+        <div class="fg"><label class="fl">À partir de</label><input class="fi" id="objFrom" type="month" value="${def}"></div>
+        <div class="fg"><label class="fl">Objectif mensuel (€)</label><input class="fi" id="objMt" type="number" step="10" min="0" inputmode="decimal" value="${o?o.montant:200}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.55;margin-bottom:13px">
+        Cet objectif s'applique à ce mois et aux suivants, jusqu'à la période suivante.
+      </div>
+      <button type="button" class="sbtn" onpointerdown="objSave(${o?"'"+o.from+"'":'null'},event)">Enregistrer</button>`,null);
+  },70);
+}
+function objSave(ancien,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  const from=document.getElementById('objFrom').value;
+  const mt=parseFloat(document.getElementById('objMt').value);
+  if(!from||isNaN(mt)||mt<0)return;
+  if(!Array.isArray(D.objectifs))D.objectifs=[];
+  if(ancien)D.objectifs=D.objectifs.filter(o=>o.from!==ancien);
+  D.objectifs=D.objectifs.filter(o=>o.from!==from);
+  D.objectifs.push({from,montant:mt});
+  D.objectifs.sort((a,b)=>a.from.localeCompare(b.from));
   sv();closeOv();renderP();
+}
+function objDel(i,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  const objs=(D.objectifs||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
+  const o=objs[i];if(!o)return;
+  D.objectifs=D.objectifs.filter(x=>x.from!==o.from);
+  sv();closeOv();renderP();
+  setTimeout(openPatrimSettings,80);
 }
 
 // ---- Épargne livrets : objectif + calendrier coloré + projection ----
@@ -1213,75 +1296,144 @@ function renderMoyenne(){
   const allKeys=Object.keys(snaps).sort();
   const lv=k=>{const s=snaps[k];if(!s)return null;
     return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);};
-  const year=py;
-  // Deltas de l'année affichée, jusqu'au mois affiché
-  const curKey=sk(pm,py);
+  const year=py, curKey=sk(pm,py);
   const yKeys=allKeys.filter(k=>k.startsWith(year+'-')&&k<=curKey);
-  const deltas=[];
+  const L=[];
   yKeys.forEach(k=>{
     const i=allKeys.indexOf(k);if(i<=0)return;
     const cur=lv(k),prev=lv(allKeys[i-1]);
     if(cur===null||prev===null)return;
-    deltas.push({key:k,m:MS[parseInt(k.split('-')[1])-1],d:cur-prev});
+    L.push({k,m:MS[parseInt(k.split('-')[1])-1],d:cur-prev,obj:objetifPour(k),ex:estExcept(k)});
   });
-  if(!deltas.length){
-    box.innerHTML=`<div style="padding:18px 15px;text-align:center;font-size:12px;color:var(--tx2)">
-      Enregistre au moins deux mois de patrimoine pour suivre ton épargne.</div>`;
-    return;
+  if(!L.length){
+    box.innerHTML=`<div class="mv-empty">Enregistre au moins deux mois de patrimoine pour suivre ton épargne.</div>`;
+    _epData=null;return;
   }
-  const OBJ=D.objectifEpargne||0;
-  const tot=deltas.reduce((a,x)=>a+x.d,0);
-  const moy=tot/deltas.length;
-  const cur=deltas[deltas.length-1];
-  const atteints=OBJ>0?deltas.filter(x=>x.d>=OBJ).length:0;
   const solde=lv(curKey)!==null?lv(curKey):lv(yKeys[yKeys.length-1]);
-  const reste=Math.max(0,12-deltas.length);
-  const proj=solde+moy*reste;
+  const tot=L.reduce((a,x)=>a+x.d,0);
+  const moy=tot/L.length;
+  const norm=L.filter(x=>!x.ex);
+  const moyH=norm.length?norm.reduce((a,x)=>a+x.d,0)/norm.length:null;
+  const nbEx=L.filter(x=>x.ex).length;
+  const avecObj=L.filter(x=>x.obj>0).length;
+  const atteints=L.filter(x=>x.obj>0&&x.d>=x.obj).length;
+  _epData={L,solde,year};
   const fD=n=>(n>=0?'+':'−')+Math.abs(Math.round(n)).toLocaleString('fr-FR')+' €';
+  const mx=Math.max(...L.map(x=>Math.abs(x.d)),1);
 
-  function cellCol(d){
-    if(d<0)return{bg:'rgba(251,113,133,.55)',tx:'#fff'};
-    if(d===0)return{bg:'var(--bg2)',tx:'var(--tx2)'};
-    if(OBJ<=0)return{bg:'rgba(34,197,94,.5)',tx:'#fff'};
-    const r=Math.min(1,d/OBJ);
-    return{bg:`rgba(34,197,94,${(0.16+r*0.64).toFixed(2)})`,tx:'#fff'};
-  }
-  const cells=deltas.map(x=>{
-    const c=cellCol(x.d);
-    return`<div class="hmc" style="background:${c.bg}">
-      ${OBJ>0&&x.d>=OBJ?`<span class="ck" style="color:${c.tx}">✓</span>`:''}
-      <span class="mm" style="color:${c.tx}">${x.m}</span>
-      <span class="vv" style="color:${c.tx}">${x.d===0?'—':fD(x.d).replace(' €','')}</span>
-    </div>`;}).join('');
+  const bars=L.map((x,i)=>{
+    const h=Math.max(3,Math.abs(x.d)/mx*44);
+    let fond;
+    if(x.d===0)fond='var(--bd2)';
+    else if(x.d>0)fond=(x.obj>0&&x.d>=x.obj)?'linear-gradient(180deg,#4ade80,#22C55E)':'linear-gradient(180deg,#3ec98a,#1D9E75)';
+    else fond='linear-gradient(180deg,#FB7185,#D85A30)';
+    const style=x.ex
+      ? `background:transparent;border:1.5px dashed ${x.d<0?'#FB7185':'#22C55E'}`
+      : `background:${fond};box-shadow:0 0 6px ${x.d<0?'#D85A3055':'#1D9E7555'}`;
+    const op=(_epSel!==null&&_epSel!==i)?'.3':'1';
+    return`<div class="zbc" onpointerdown="epPick(${i},event)">
+      ${x.d>=0?`<i style="bottom:50%;height:${h}%;${style};opacity:${op}"></i>`
+              :`<i style="top:50%;height:${h}%;${style};opacity:${op}"></i>`}</div>`;
+  }).join('');
 
-  let head;
-  if(OBJ>0){
-    const p=Math.min(100,Math.max(0,cur.d/OBJ*100));
-    head=`<div class="ep-top"><span class="ep-big ${cur.d>=0?'g':'r'}">${fmk(cur.d)}</span>
-      <span class="ep-sm">sur ${fmk(OBJ)} visés en ${MN[parseInt(cur.key.split('-')[1])-1].toLowerCase()}</span></div>
-      <div class="gtrack"><i style="width:${p}%;background:linear-gradient(90deg,#1D9E75,#22C55E)"></i></div>
-      <div class="ep-sm" style="margin-bottom:14px"><b style="color:var(--tx1)">${atteints} mois sur ${deltas.length}</b> ont atteint l'objectif cette année</div>`;
-  } else {
-    head=`<div class="ep-top"><span class="ep-big ${moy>=0?'g':'r'}">${fD(moy)}</span>
-      <span class="ep-sm">par mois en moyenne</span></div>
-      <div class="ep-sm" style="margin:6px 0 14px">${fmk(tot)} mis de côté cette année ·
-      <span onclick="openPatrimSettings()" style="color:var(--acc);cursor:pointer">définir un objectif</span></div>`;
+  let act;
+  if(_epSel===null||!L[_epSel]){
+    act=`<span class="ci-hint"><i class="ti ti-hand-click"></i> Touche un mois pour le détail</span>`;
+  }else{
+    const x=L[_epSel];
+    act=`<span class="cn">${x.m} ${year}</span>
+      <span class="cp" style="color:${x.d>0?'var(--pos)':x.d<0?'var(--neg)':'var(--tx2)'}">${x.d===0?'—':fD(x.d)}</span>
+      <span class="lnk" onpointerdown="epToggle(event)">${x.ex?'Réintégrer':'Exclure de la moyenne'}</span>`;
   }
-  const legend=OBJ>0?`<div class="lgmini">
-      <span><i style="background:rgba(34,197,94,.8)"></i>objectif atteint</span>
-      <span><i style="background:rgba(34,197,94,.28)"></i>partiel</span>
-      <span><i style="background:rgba(251,113,133,.55)"></i>retrait</span></div>`:'';
+  const reste=Math.max(0,12-L.length);
+  const base=(moyH!==null?moyH:moy);
+  const proj=solde+base*reste;
 
   box.innerHTML=`<div style="padding:15px">
-    ${head}
-    <div class="hm">${cells}</div>
-    ${legend}
-    <div class="ep-proj">Au rythme de <b>${fD(moy)}</b>/mois, tes livrets atteindront
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--tx1)">${fmk(solde)}</span>
+      <span style="font-size:10.5px;color:var(--tx2)">sur tes livrets</span>
+    </div>
+    <div class="ep-moys">
+      <span>Moyenne <b style="color:${moy>=0?'var(--pos)':'var(--neg)'}">${fD(moy)}</b>/mois</span>
+      ${nbEx?`<span>Hors retraits <b style="color:${moyH>=0?'var(--pos)':'var(--neg)'}">${fD(moyH)}</b>/mois</span>`:''}
+    </div>
+    ${avecObj?`<div style="font-size:10.5px;color:var(--tx2);margin-top:5px"><b style="color:var(--tx1)">${atteints} mois sur ${avecObj}</b> ont atteint leur objectif</div>`:''}
+    <div class="zbwrap"><div class="zline"></div>${bars}</div>
+    <div class="zbx">${L.map(x=>`<span>${x.m}</span>`).join('')}</div>
+    <div class="ep-act">${act}</div>
+    <div class="ep-proj">Au rythme de <b>${fD(base)}</b>/mois, tes livrets atteindront
       <b>${fmk(proj)}</b> fin décembre ${year}.</div>
   </div>`;
 }
 
+// État de sélection et objectifs datés
+let _epSel=null,_epData=null;
+function objetifPour(k){
+  const objs=(D.objectifs||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
+  let v=0;objs.forEach(o=>{if(o.from<=k)v=o.montant;});return v;
+}
+function estExcept(k){return (D.retraitsExcept||[]).includes(k);}
+function epPick(i,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  _epSel=(_epSel===i)?null:i;renderMoyenne();
+}
+function epToggle(ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  if(_epSel===null||!_epData)return;
+  const k=_epData.L[_epSel].k;
+  if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];
+  const i=D.retraitsExcept.indexOf(k);
+  if(i>=0)D.retraitsExcept.splice(i,1);else D.retraitsExcept.push(k);
+  sv();renderMoyenne();
+}
 
+
+
+
+// ---- Style commun à tous les graphiques : dégradé + halo ----
+function lightC(hex,amt){
+  if(!hex||hex[0]!=='#')return hex;
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&255)+amt),g=Math.min(255,((n>>8)&255)+amt),b=Math.min(255,(n&255)+amt);
+  return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function gradBar(col,vertical){
+  return`linear-gradient(${vertical?'180deg':'145deg'},${lightC(col,38)},${col})`;
+}
+function glowBar(col){return`0 0 6px ${col}55`;}
+
+// ---- Sélection au toucher, commune à tous les graphiques ----
+const _charts={};
+function chartReg(key,parts,total,infoId){_charts[key]={parts,total,infoId,sel:null};}
+function chartPick(key,i,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  const ch=_charts[key];if(!ch)return;
+  ch.sel=(ch.sel===i)?null:i;
+  chartPaint(key);
+  clearTimeout(ch.timer);
+  if(ch.sel!==null)ch.timer=setTimeout(()=>{ch.sel=null;chartPaint(key);},4000);
+}
+function chartPaint(key){
+  const ch=_charts[key];if(!ch)return;
+  const info=document.getElementById(ch.infoId);
+  if(info){
+    if(ch.sel===null){
+      info.innerHTML=`<span class="ci-hint"><i class="ti ti-hand-click"></i> Touche une part pour le détail</span>`;
+    }else{
+      const p=ch.parts[ch.sel];
+      info.innerHTML=`<span class="ci-dot" style="background:${p.c}"></span>
+        <span class="ci-n">${p.n}</span>
+        <span class="ci-p">${(p.v/ch.total*100).toFixed(1)} %</span>
+        <span class="ci-v">${fmt(p.v)}</span>`;
+    }
+  }
+  // estompage des autres parts
+  document.querySelectorAll('[data-ck="'+key+'"]').forEach(el=>{
+    const i=parseInt(el.dataset.ci);
+    el.style.opacity=(ch.sel===null||ch.sel===i)?'1':'.3';
+  });
+}
 
 // ============ MODULE PEA ============
 // Bibliothèque : pictogramme sectoriel + couleur de marque
@@ -1353,6 +1505,7 @@ function peaData(){
 }
 function openPea(){
   document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.subpage').forEach(x=>x.classList.remove('on'));
   document.getElementById('scr-pea').classList.add('on');
   try{window.scrollTo(0,0);}catch(e){}
   renderPea();
@@ -1403,28 +1556,48 @@ function renderPea(){
     const parts=(pea.positions||[]).map(p=>({n:p.nom,v:peaVal(p),c:p.col||'#5A6570'})).filter(x=>x.v>0)
       .sort((a,b)=>b.v-a.v);
     if((pea.liquidites||0)>0)parts.push({n:'Liquidités',v:pea.liquidites,c:'#5A6570'});
-    // Géométrie : demi-cercle du haut, de gauche à droite
+    // Même traitement que le donut du patrimoine : rail, dégradés, halo doux
+    function lighten(hex,amt){
+      const n=parseInt(hex.slice(1),16);
+      const r=Math.min(255,((n>>16)&255)+amt),g=Math.min(255,((n>>8)&255)+amt),b=Math.min(255,(n&255)+amt);
+      return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+    }
+    const dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const railCol=dark?'#232630':'#eef0f5';
+    const blur=dark?2:1.2;
+    const rO=88,rI=64,gap=2.2,railR=(rO+rI)/2,railW=rO-rI+4;
     function pol(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];}
-    function seg(rO,rI,s,e){
+    function seg(s,e){
       const[x1,y1]=pol(100,100,rO,s),[x2,y2]=pol(100,100,rO,e),lg=(e-s)>180?1:0;
       const[x3,y3]=pol(100,100,rI,e),[x4,y4]=pol(100,100,rI,s);
       return`M${x1.toFixed(2)},${y1.toFixed(2)} A${rO},${rO} 0 ${lg} 1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${rI},${rI} 0 ${lg} 0 ${x4.toFixed(2)},${y4.toFixed(2)} Z`;
     }
-    let ang=-90;const paths=[];
-    parts.forEach(x=>{
-      const sw=(x.v/tot)*180;                       // 180° au lieu de 360
-      const s=ang+0.9,e=Math.max(ang+sw-0.9,ang+1.1);
-      paths.push(`<path d="${seg(88,62,s,e)}" fill="${x.c}"/>`);
+    let ang=-90;const paths=[],defs=[];
+    parts.forEach((x,i)=>{
+      const sw=(x.v/tot)*180;                       // demi-tour
+      const s=ang+gap/2,e=Math.max(ang+sw-gap/2,ang+gap/2+0.4);
+      defs.push(`<linearGradient id="pag${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${lighten(x.c,38)}"/><stop offset="100%" stop-color="${x.c}"/></linearGradient>`);
+      paths.push(`<path d="${seg(s,e)}" fill="url(#pag${i})" data-ck="pea" data-ci="${i}" onpointerdown="chartPick('pea',${i},event)"/>`);
       ang+=sw;
     });
     document.getElementById('peaArc').innerHTML=
-      `<svg viewBox="0 6 200 100" role="img" aria-label="Répartition du portefeuille"><g transform="translate(0,6)">${paths.join('')}</g></svg>`;
+      `<svg viewBox="0 4 200 104" role="img" aria-label="Répartition du portefeuille">
+        <defs>${defs.join('')}
+          <filter id="paglow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="${blur}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g transform="translate(0,8)">
+          <path d="M${100-railR},100 A${railR},${railR} 0 0 1 ${100+railR},100" fill="none" stroke="${railCol}" stroke-width="${railW}"/>
+          <g filter="url(#paglow)">${paths.join('')}</g>
+        </g>
+      </svg>`;
     document.getElementById('peaArcTot').textContent=fmt(tot);
-    document.getElementById('peaLeg').innerHTML=parts.map(x=>
-      `<div class="plg2"><span class="dt" style="background:${x.c}"></span>
-        <span class="nm">${x.n}</span>
-        <span class="pc">${Math.round(x.v/tot*100)} %</span>
-        <span class="am">${fmk(x.v)}</span></div>`).join('');
+    chartReg('pea',parts,tot,'peaInfo');chartPaint('pea');
+    document.getElementById('peaLeg').innerHTML=
+      `<div class="lgchips">${parts.map((x,k)=>
+        `<span class="lgchip" data-ck="pea" data-ci="${k}" onpointerdown="chartPick('pea',${k},event)">
+          <span class="sq" style="background:${x.c}"></span>${x.n.split(' ')[0]} <b>${Math.round(x.v/tot*100)}%</b></span>`).join('')}</div>`;
   } else rep.style.display='none';
 
   renderPeaList(pea);
@@ -1793,6 +1966,7 @@ function bkCapLine(data){return (data.immobilier||[]).find(x=>x.id===bkLineId)||
 function openBricks(id){
   bkLineId=id;
   document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.subpage').forEach(x=>x.classList.remove('on'));
   document.getElementById('scr-bricks').classList.add('on');
   try{window.scrollTo(0,0);}catch(e){}
   renderBricks();
@@ -1840,8 +2014,11 @@ function renderBricks(){
   if(tot>0){
     rep.style.display='';
     const pc=v=>(v/tot*100);
-    document.getElementById('bkStack').innerHTML=
-      `<i style="width:${pc(vCap)}%;background:${PAT_COL.immo}"></i><i style="width:${pc(vSol)}%;background:${PAT_COL.bricks}"></i>`;
+    const bkParts=[{n:'Capital investi',v:vCap,c:PAT_COL.immo},{n:'Solde disponible',v:vSol,c:PAT_COL.bricks}];
+    chartReg('bricks',bkParts,tot,'bkInfo');
+    document.getElementById('bkStack').innerHTML=bkParts.map((p,k)=>
+      `<i data-ck="bricks" data-ci="${k}" onpointerdown="chartPick('bricks',${k},event)" style="width:${pc(p.v)}%;background:${gradBar(p.c)};box-shadow:${glowBar(p.c)}"></i>`).join('');
+    chartPaint('bricks');
     document.getElementById('bkLeg').innerHTML=
       `<span class="leg-item"><span class="leg-dot" style="background:${PAT_COL.immo}"></span><span style="color:var(--tx2)">Capital investi <strong style="color:var(--tx1)">${fmt(vCap)}</strong></span></span>
        <span class="leg-item"><span class="leg-dot" style="background:${PAT_COL.bricks}"></span><span style="color:var(--tx2)">Disponible <strong style="color:var(--tx1)">${fmt(vSol)}</strong></span></span>`;
@@ -1897,9 +2074,9 @@ function bkDrawBars(sel){
   const{serie,mx,moy}=_bkSerie;
   document.getElementById('bkBars').innerHTML=serie.map((s,i)=>{
     const op=(sel!=null&&sel!==i)?'.35':'1';
-    if(s.v===0)return`<i style="height:7%;background:rgba(216,90,48,.5);opacity:${op}"></i>`;
-    const col=s.v>moy*1.5?'#22C55E':'rgba(34,197,94,.55)';
-    return`<i style="height:${Math.max(9,s.v/mx*100)}%;background:${col};opacity:${op}"></i>`;
+    if(s.v===0)return`<i style="height:7%;background:${gradBar('#D85A30',1)};box-shadow:${glowBar('#D85A30')};opacity:${op}"></i>`;
+    const col=s.v>moy*1.5?'#22C55E':'#1D9E75';
+    return`<i style="height:${Math.max(9,s.v/mx*100)}%;background:${gradBar(col,1)};box-shadow:${glowBar(col)};opacity:${op}"></i>`;
   }).join('');
 }
 function bkResetHead(){
@@ -2255,7 +2432,7 @@ function svP(section){
 }
 
 function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;migrerDates();sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
 // Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
