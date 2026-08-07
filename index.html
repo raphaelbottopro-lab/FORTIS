@@ -1224,7 +1224,7 @@ function renderP(){
   // 2. Évolution vs mois précédent
   if(prev){const prevA=ta(prev),diff=tA-prevA,pct=(prevA>0?(diff/prevA*100):0).toFixed(1),cls=diff>0?'up':diff<0?'down':'flat',sign=diff>0?'+':'';bn+=`<div class="dc ${cls}"><i class="ti ${diff>0?'ti-trending-up':diff<0?'ti-trending-down':'ti-minus'}" style="font-size:20px;color:${diff>0?'#1D9E75':diff<0?'#D85A30':'#888780'}"></i><div class="dl ${cls}">Évolution vs mois précédent</div><div class="dv ${cls}">${sign}${fmk(diff)} (${sign}${pct}%)</div></div>`;}
   document.getElementById('peb').innerHTML=bn;
-  renderObjPat(net);
+  renderObjPat(tA);   // objectif fondé sur les actifs, pas sur le net
 
   // Zone snapshot
   let sz='';
@@ -1506,7 +1506,7 @@ function openPatrimSettings(){
     <button type="button" onpointerdown="closeOv();setTimeout(openObjPat,70)" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;text-align:left;font-family:inherit;cursor:pointer">
       <span class="pi" style="background:${softGrad('#1D9E75')};box-shadow:inset 0 0 0 1px #1D9E7526"><i class="ti ti-flag" style="color:#1D9E75"></i></span>
       <span style="flex:1;min-width:0">
-        <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${D.objectifPatrimoine?fmk(D.objectifPatrimoine)+' de patrimoine net':'Aucun objectif défini'}</span>
+        <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${D.objectifPatrimoine?fmk(D.objectifPatrimoine)+" d'actifs":'Aucun objectif défini'}</span>
         <span style="display:block;font-size:11px;color:var(--tx2);margin-top:2px">Avec date d'atteinte estimée</span>
       </span>
       <i class="ti ti-chevron-right" style="color:var(--tx2);font-size:15px"></i>
@@ -1729,10 +1729,11 @@ function refAnnuelle(){
 }
 
 // ============ OBJECTIF DE PATRIMOINE ============
-function netDe(k){
+// Actifs d'un mois : épargne + immobilier, hors passifs et hors comptes courants
+function actifsDe(k){
   const s=(D.patrimoine.snapshots||{})[k];
   if(!s)return null;
-  return ta(s)-(s.passifs||[]).reduce((a,x)=>a+x.valeur,0);
+  return ta(s);
 }
 // Rythme mensuel sur les 12 derniers mois figés
 function rythmePat(){
@@ -1740,24 +1741,20 @@ function rythmePat(){
   if(ks.length<2)return null;
   const fin=ks[ks.length-1];
   const deb=ks[Math.max(0,ks.length-13)];
-  const nDeb=netDe(deb),nFin=netDe(fin);
+  const nDeb=actifsDe(deb),nFin=actifsDe(fin);
   if(nDeb===null||nFin===null)return null;
   const[y1,m1]=deb.split('-').map(Number),[y2,m2]=fin.split('-').map(Number);
   const mois=(y2-y1)*12+(m2-m1);
   if(mois<1)return null;
   return{parMois:(nFin-nDeb)/mois,mois,deb,fin};
 }
-function renderObjPat(netCourant){
+function renderObjPat(actifsCourants){
   const box=document.getElementById('objPat');
   if(!box)return;
   const obj=D.objectifPatrimoine||0;
   if(!obj){box.innerHTML='';return;}
-  const ks=Object.keys(D.patrimoine.snapshots||{}).sort();
-  const depart=ks.length?netDe(ks[0]):netCourant;
-  const net=netCourant;
-  // Progression mesurée depuis ton point de départ, pour rester lisible même en négatif
-  const plage=obj-depart;
-  const pct=plage!==0?Math.max(0,Math.min(100,(net-depart)/plage*100)):100;
+  const net=actifsCourants;
+  const pct=Math.max(0,Math.min(100,net/obj*100));
   const reste=obj-net;
   const R=rythmePat();
   let projection;
@@ -1775,7 +1772,7 @@ function renderObjPat(netCourant){
   box.innerHTML=`<div class="op-card" onclick="openObjPat()">
     <div class="op-h"><span class="op-l">Objectif de patrimoine</span>
       <span class="op-p">${Math.round(pct)} %</span></div>
-    <div class="op-v">${net<0?'−':''}${fmk(Math.abs(net))} <span class="op-s">sur ${fmk(obj)}</span></div>
+    <div class="op-v">${fmk(net)} <span class="op-s">sur ${fmk(obj)} d'actifs</span></div>
     <div class="op-tr"><i style="width:${pct}%;background:${gradBar('#1D9E75')};box-shadow:${glowBar('#1D9E75')}"></i></div>
     ${reste>0?`<div class="op-r">Il reste <b>${fmk(reste)}</b></div>`:''}
     <div class="op-pj">${projection}</div>
@@ -1784,9 +1781,10 @@ function renderObjPat(netCourant){
 function openObjPat(){
   const cur=D.objectifPatrimoine||0;
   openOv('Objectif de patrimoine',`
-    <div class="fg"><label class="fl">Patrimoine net visé (€)</label>
+    <div class="fg"><label class="fl">Montant d'actifs visé (€)</label>
       <input class="fi" id="opMt" type="number" step="500" min="0" inputmode="decimal" value="${cur||''}" placeholder="Ex : 10000" style="font-size:20px;text-align:center;font-weight:600"></div>
     <div style="font-size:11px;color:var(--tx2);line-height:1.55;margin-bottom:13px">
+      L'objectif porte sur tes <b style="color:var(--tx1)">actifs</b> — épargne et immobilier — sans déduire tes passifs.
       Fortis estime la date d'atteinte à partir de ton rythme des douze derniers mois figés.
       La projection est linéaire : elle ne tient pas compte des rendements composés.
     </div>
