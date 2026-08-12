@@ -76,19 +76,27 @@ function prevenir(type) {
 
 // Permet à l'appli de forcer une vérification
 self.addEventListener('message', e => {
-  if (e.data === 'verifier') {
-    caches.open(CACHE).then(async cache => {
-      const cle = RACINE + 'index.html';
-      const enCache = await cache.match(cle, { ignoreSearch: true });
-      try {
-        const rep = await fetch(cle + '?v=' + Date.now(), { cache: 'no-store' });
-        if (rep && rep.ok) {
-          const neuf = await rep.clone().text();
-          const vieux = enCache ? await enCache.clone().text() : null;
-          await cache.put(cle, rep);
-          prevenir(vieux !== null && vieux !== neuf ? 'maj' : 'ajour');
-        }
-      } catch (err) { prevenir('horsligne'); }
-    });
-  }
+  if (e.data !== 'verifier') return;
+  caches.open(CACHE).then(async cache => {
+    try {
+      // On récupère la version publiée une seule fois, sans passer par le cache HTTP
+      const rep = await fetch(RACINE + 'index.html?v=' + Date.now(), { cache: 'no-store' });
+      if (!rep || !rep.ok) { prevenir('horsligne'); return; }
+      const neuf = await rep.clone().text();
+
+      // On compare avec ce qui est en cache, quelle que soit l'entrée
+      const cles = await cache.keys();
+      let change = cles.length === 0;
+      for (const req of cles) {
+        const c = await cache.match(req);
+        if (c) { const t = await c.clone().text(); if (t !== neuf) { change = true; break; } }
+      }
+
+      // Toutes les entrées reçoivent la nouvelle version
+      const cibles = cles.length ? cles.map(r => r.url) : [RACINE, RACINE + 'index.html'];
+      for (const u of cibles) await cache.put(u, rep.clone());
+
+      prevenir(change ? 'maj' : 'ajour');
+    } catch (err) { prevenir('horsligne'); }
+  });
 });

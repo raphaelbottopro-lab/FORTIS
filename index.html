@@ -2469,7 +2469,7 @@ ${corps}</div></body></html>`;
 
 
 // ============ HORS LIGNE ============
-let _swEtat='inconnu';   // inconnu | pret | maj | horsligne
+let _swEtat='inconnu',_swAjour=0;   // inconnu | pret | maj | horsligne
 function enregistrerSW(){
   if(!('serviceWorker' in navigator))return;
   // Le service worker exige un contexte sécurisé (https ou local) : sur file:// il est indisponible
@@ -2478,16 +2478,36 @@ function enregistrerSW(){
     _swEtat='pret';majIndicateur();
   }).catch(()=>{});
   navigator.serviceWorker.addEventListener('message',ev=>{
+    clearTimeout(_swAttente);
     const t=ev.data&&ev.data.fortis;
     if(t==='maj'){_swEtat='maj';afficherMajBandeau();}
-    else if(t==='ajour'){_swEtat='pret';}
+    else if(t==='ajour'){_swEtat='pret';_swAjour=Date.now();}
     else if(t==='horsligne'){_swEtat='horsligne';}
     majIndicateur();
   });
 }
 function verifierMaj(){
-  if(!navigator.serviceWorker||!navigator.serviceWorker.controller)return;
+  const el=document.getElementById('swEtat');
+  if(!navigator.serviceWorker||!navigator.serviceWorker.controller){
+    // Pas de service worker : on le dit plutôt que de ne rien faire
+    _swEtat='inconnu';majIndicateur();
+    if(el)flashIndicateur("Mode hors ligne indisponible ici");
+    return;
+  }
+  if(navigator.onLine===false){_swEtat='horsligne';majIndicateur();return;}
+  if(el)flashIndicateur('Vérification en cours…');
+  clearTimeout(_swAttente);
+  _swAttente=setTimeout(()=>{_swEtat='horsligne';majIndicateur();},6000);
   navigator.serviceWorker.controller.postMessage('verifier');
+}
+let _swAttente=null;
+// Message temporaire dans la carte, remplacé par l'état réel ensuite
+function flashIndicateur(txt){
+  const el=document.getElementById('swEtat');
+  if(!el)return;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:11px;padding:13px">
+    <span class="pi" style="background:${softGrad('#6C5CE7')};box-shadow:inset 0 0 0 1px #6C5CE726"><i class="ti ti-refresh" style="color:#6C5CE7"></i></span>
+    <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--tx1)">${txt}</span></div>`;
 }
 function afficherMajBandeau(){
   const box=document.getElementById('majBandeau');
@@ -2500,10 +2520,13 @@ function afficherMajBandeau(){
 function majIndicateur(){
   const el=document.getElementById('swEtat');
   if(!el)return;
+  const recent=(Date.now()-_swAjour)<5000&&navigator.onLine!==false;
   const conf={
-    pret:      ['#1D9E75','ti-wifi-off','Prête hors ligne','Une copie de l\'appli est conservée dans ce téléphone'],
+    pret:      recent
+      ? ['#1D9E75','ti-circle-check','Déjà à jour','Tu utilises la dernière version publiée']
+      : ['#1D9E75','ti-wifi-off','Prête hors ligne','Une copie de l\'appli est conservée dans ce téléphone'],
     maj:       ['#E0A32E','ti-download','Mise à jour disponible','Recharge la page pour l\'appliquer'],
-    horsligne: ['#7C8598','ti-cloud-off','Hors ligne','Impossible de vérifier les mises à jour'],
+    horsligne: ['#7C8598','ti-cloud-off','Pas de réseau','Impossible de vérifier — l\'appli reste utilisable'],
     inconnu:   ['#7C8598','ti-help','Mode hors ligne inactif','Nécessite une ouverture depuis GitHub Pages'],
   }[_swEtat]||[];
   const[col,ic,titre,sous]=conf;
@@ -3537,6 +3560,8 @@ function bkSeedGo(){
 
 function renderH(){
   majIndicateur();
+  if(navigator.serviceWorker&&navigator.serviceWorker.controller)
+    navigator.serviceWorker.controller.postMessage('verifier');
   const tl=document.getElementById('thLbl');if(tl)tl.textContent=libTheme();
   renderRappel();
   bkpRender();
