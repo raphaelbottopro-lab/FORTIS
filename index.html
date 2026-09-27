@@ -466,9 +466,11 @@ input:checked+.tslider:before{transform:translateX(20px)}
   <div class="scr" id="scr-patrim">
     <div class="mhdr">
       <button class="mnav" onclick="chgPM(-1)"><i class="ti ti-chevron-left"></i></button>
-      <div style="display:flex;align-items:center;gap:8px"><div class="mtitle" id="pmd" onclick="openCal()">Mai 2026 <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i></div><button onclick="openPatrimSettings()" style="background:transparent;border:none;cursor:pointer;color:var(--tx2);font-size:20px;padding:4px"><i class="ti ti-settings"></i></button></div>
+      <div style="display:flex;align-items:center;gap:8px"><div class="mtitle" id="pmd" onclick="openCal()">Mai 2026 <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i></div><button onclick="openPatrimSettings()" style="background:transparent;border:none;cursor:pointer;color:var(--tx2);font-size:20px;padding:4px"><i class="ti ti-settings"></i></button><button type="button" id="pinBtnP" class="pin-btn" onclick="epingleAppuiP()" aria-label="Épingler ce mois"><i class="ti ti-pin"></i></button></div>
       <button class="mnav" onclick="chgPM(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
+    <div id="pinBadgeP" class="pin-badge-zone"></div>
+    <div id="pinInfoP"></div>
     <div class="hero"><div class="hero-lbl">Patrimoine net</div><div class="hero-val" id="pnet">0 €</div><div class="hero-sub" id="psub"></div></div>
     <div id="peb"></div>
     <div id="objPat"></div>
@@ -1080,7 +1082,7 @@ function epingleConfirm(k){
   const actuel=D.epingle&&D.budgets[D.epingle]?nomMoisMin(D.epingle):null;
   openOv('Épingler '+MN[parseInt(k.slice(5))-1].toLowerCase()+' ?',`
     <div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
-      <div>Fortis s'ouvrira désormais sur <b>${nomMoisMin(k)}</b>.${actuel?` ${actuel.charAt(0).toUpperCase()+actuel.slice(1)} restera accessible par les flèches.`:''}</div></div>
+      <div>Le <b>budget</b> et le <b>patrimoine</b> s'ouvriront désormais sur <b>${nomMoisMin(k)}</b>.${actuel?` ${actuel.charAt(0).toUpperCase()+actuel.slice(1)} restera accessible par les flèches.`:''}</div></div>
     <button type="button" class="sbtn" onpointerdown="epingleGo('${k}',event)"><i class="ti ti-pin-filled"></i> Épingler ${MN[parseInt(k.slice(5))-1].toLowerCase()}</button>
     <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
 }
@@ -1089,7 +1091,8 @@ function epingleGo(k,ev){
   if(!D.budgets[k])return;
   D.epingle=k;sv();closeOv();
   const[y,m]=k.split('-');cm=parseInt(m)-1;cy=parseInt(y);
-  renderB();
+  allerPatOuverture();
+  renderB();renderP();
 }
 function epingleDepuisReglages(ev){
   if(ev&&ev.stopPropagation)ev.stopPropagation();
@@ -1097,6 +1100,64 @@ function epingleDepuisReglages(ev){
   if(k===D.epingle)return;
   setTimeout(()=>epingleConfirm(k),70);
 }
+
+// ---- Épingle côté patrimoine ----
+function patExiste(k){
+  const P=D.patrimoine;
+  return !!(k&&(P.snapshots[k]||P.drafts[k]||k===P.editingMonth));
+}
+// Mois d'ouverture du patrimoine : le mois épinglé s'il a un patrimoine, sinon le mois en cours de saisie
+function moisPatOuverture(){
+  if(patExiste(D.epingle))return D.epingle;
+  if(D.patrimoine.editingMonth)return D.patrimoine.editingMonth;
+  const ks=Object.keys(D.patrimoine.snapshots).sort();
+  return ks.length?ks[ks.length-1]:null;
+}
+function allerPatOuverture(){
+  const k=moisPatOuverture();
+  if(!k)return;
+  const[y,m]=k.split('-');pm=parseInt(m)-1;py=parseInt(y);
+}
+function majEpingleUIP(){
+  const k=sk(pm,py),epi=(k===D.epingle);
+  const btn=document.getElementById('pinBtnP'),bz=document.getElementById('pinBadgeP'),inf=document.getElementById('pinInfoP');
+  if(btn){
+    btn.className='pin-btn'+(epi?' on':'');
+    btn.innerHTML=`<i class="ti ${epi?'ti-pin-filled':'ti-pin'}"></i>`;
+  }
+  if(bz)bz.innerHTML=epi?`<span class="pbdg on"><i class="ti ti-pin-filled"></i> Mois épinglé</span>`:'';
+  // Décalage : le mois épinglé n'a pas encore de patrimoine et on regarde le mois en cours de saisie
+  if(inf){
+    const em=D.patrimoine.editingMonth;
+    const decal=D.epingle&&!patExiste(D.epingle)&&em&&D.epingle>em&&k===em;
+    inf.innerHTML=decal?`<div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
+      <div>Tu as épinglé <b>${MN[parseInt(D.epingle.slice(5))-1].toLowerCase()}</b>. Fige d'abord ${MN[parseInt(em.slice(5))-1].toLowerCase()} : ${MN[parseInt(D.epingle.slice(5))-1].toLowerCase()} s'ouvrira ensuite automatiquement.</div></div>`:'';
+  }
+}
+function epingleAppuiP(){
+  const k=sk(pm,py);
+  if(k===D.epingle){
+    openOv('Mois épinglé',`<div class="infobox"><i class="ti ti-pin-filled" style="font-size:14px;flex-shrink:0"></i>
+      <div>Budget et patrimoine s'ouvrent déjà sur <b>${nomMoisMin(k)}</b>. Pour changer, va sur un autre mois et touche son épingle.</div></div>`,null);
+    return;
+  }
+  if(D.budgets[k]){epingleConfirm(k);return;}
+  const nom=MN[pm].toLowerCase();
+  openOv('Épingler '+nom+' ?',`
+    <div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">${MN[pm]} ${py} n'a pas encore de budget. L'épingle en a besoin pour fonctionner.</div>
+    <button type="button" class="sbtn" onpointerdown="creerBudgetEtEpingler('${k}',event)"><i class="ti ti-plus"></i> Créer le budget et épingler</button>
+    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
+}
+function creerBudgetEtEpingler(k,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  if(!D.budgets[k]){
+    const avant=Object.keys(D.budgets).filter(x=>x<k).sort();
+    const modele=avant.length?D.budgets[avant[avant.length-1]]:null;
+    D.budgets[k]=newMonth(modele||baseBudget());
+  }
+  epingleGo(k);
+}
+
 // Après la clôture du mois épinglé : proposer le mois suivant
 function proposerApresCloture(k){
   const[y,m]=k.split('-').map(Number);
@@ -1315,6 +1376,7 @@ function createDraft(){
 function getED(){const k=sk(pm,py);if(k===D.patrimoine.editingMonth)return D.patrimoine.current;if(D.patrimoine.drafts[k])return D.patrimoine.drafts[k];return null;}
 
 function renderP(){
+  setTimeout(majEpingleUIP,0);
   document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
   const res=gpd(),prev=gppd();
   if(!res){
@@ -3825,7 +3887,7 @@ function alerteAvantEcrasement(){
     <div>Ton dernier export date de <b>${j} jours</b>. Exporte avant, par précaution.</div></div>`;
   return'';
 }
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}allerPatOuverture();appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
 // Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
@@ -3837,19 +3899,8 @@ function importData(e){const file=e.target.files[0];if(!file)return;const r=new 
     const[by,bm]=D.epingle.split('-');
     cm=parseInt(bm)-1;cy=parseInt(by);
   }
-  // Patrimoine : toujours ouvrir sur le dernier mois FIGÉ (snapshot)
-  {
-    const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
-    if(snapKeys.length>0){
-      const last=snapKeys[snapKeys.length-1];
-      const[py2,pm2]=last.split('-');
-      pm=parseInt(pm2)-1;py=parseInt(py2);
-    } else if(D.patrimoine.editingMonth){
-      // Aucun snapshot encore : on ouvre sur le mois en cours d'édition
-      const[py2,pm2]=D.patrimoine.editingMonth.split('-');
-      pm=parseInt(pm2)-1;py=parseInt(py2);
-    }
-  }
+  // Patrimoine : le mois épinglé s'il a un patrimoine, sinon le mois en cours de saisie
+  allerPatOuverture();
   updMDisp();render();
 })();
 </script>
