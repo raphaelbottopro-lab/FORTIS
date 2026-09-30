@@ -1941,6 +1941,7 @@ function rythmePat(){
   if(mois<1)return null;
   return{parMois:(nFin-nDeb)/mois,mois,deb,fin};
 }
+function periodeObj(n){return n<=1?'sur le dernier mois':'sur les '+n+' derniers mois';}
 function renderObjPat(actifsCourants){
   const box=document.getElementById('objPat');
   if(!box)return;
@@ -1956,9 +1957,9 @@ function renderObjPat(actifsCourants){
   } else if(R&&R.parMois>0){
     const moisRestants=Math.ceil(reste/R.parMois);
     const d=new Date();d.setMonth(d.getMonth()+moisRestants);
-    projection=`À ton rythme de <b>+${fmk(R.parMois)}</b>/mois sur ${R.mois} mois, objectif atteint vers <b>${MN[d.getMonth()].toLowerCase()} ${d.getFullYear()}</b>.`;
+    projection=`À ta progression nette de <b>+${fmk(R.parMois)}</b>/mois ${periodeObj(R.mois)}, objectif atteint vers <b>${MN[d.getMonth()].toLowerCase()} ${d.getFullYear()}</b>.`;
   } else if(R){
-    projection=`Ton patrimoine recule de <b>${fmk(Math.abs(R.parMois))}</b>/mois sur ${R.mois} mois : l'objectif s'éloigne.`;
+    projection=`Ta progression nette est négative, <b>−${fmk(Math.abs(R.parMois))}</b>/mois ${periodeObj(R.mois)} : l'objectif s'éloigne.`;
   } else {
     projection=`Fige au moins deux mois pour estimer une date d'atteinte.`;
   }
