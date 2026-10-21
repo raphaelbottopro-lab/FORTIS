@@ -394,6 +394,13 @@ html[data-theme="dark"] .bipdf{color:#8B7CF0}
   body>*:not(#printZone){display:none!important}
   #printZone{display:block!important}
 }
+.hero-jg{height:6px;background:rgba(255,255,255,.2);border-radius:3px;margin-top:10px;overflow:hidden}
+.hero-jg i{display:block;height:100%;background:#fff;border-radius:3px}
+.rtag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(24,95,165,.2);color:#185FA5;margin-top:4px}
+html[data-theme="dark"] .rtag{color:#6FA8E0}
+.rxck{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:#fff}
+.rxck.on{background:#185FA5;border-color:#185FA5}
+.rxh{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin:12px 2px 6px}
 .bi-empty{padding:26px 15px;text-align:center;font-size:12.5px;color:var(--tx2);line-height:1.6}
 
 .htrack{position:relative}
@@ -1339,7 +1346,7 @@ function renderB(){
     its.forEach(item=>{
       const meta=cat.ns?item.compte||'':[item.compte,dAff(item.date),item.statut].filter(Boolean).join(' · ');
       const dot=cat.ns?'':sdot(item.statut||'');
-      html+=`<div class="row" onclick="dismissBanner()"${readonly?'':` onpointerdown="lpStart('${cat.key}',${item.id},event)" onpointerup="lpStop()" onpointercancel="lpStop()" onpointermove="lpStop()" oncontextmenu="return false"`}><div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div>${cat.key==='plaisirs'?etqMinis(item.tags):''}</div>
+      html+=`<div class="row" onclick="dismissBanner()"${readonly?'':` onpointerdown="lpStart('${cat.key}',${item.id},event)" onpointerup="lpStop()" onpointercancel="lpStop()" onpointermove="lpStop()" oncontextmenu="return false"`}><div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div>${cat.key==='plaisirs'?etqMinis(item.tags):cat.key==='revenus'&&item.retrait?`<div><span class="rtag"><i class="ti ti-arrows-exchange"></i>Retrait d'épargne</span></div>`:''}</div>
         <div class="ra ${cat.ac}">${cat.sign}${fmt(item.montant)}</div>
         ${!readonly?`<button class="rb" onclick="oE('${cat.key}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
       </div>`;
@@ -2350,7 +2357,7 @@ function biPick(i,ev){
 function calcBilan(Y){
   const mois=Object.keys(D.budgets||{}).filter(k=>k.startsWith(Y)).sort();
   const cats={charges:0,abonnements:0,epargne:0,plaisirs:0,courses:0};
-  const lignes=[];let rev=0,dep=0;
+  const lignes=[];let rev=0,dep=0,retr=0;
   mois.forEach(k=>{
     const b=D.budgets[k];
     const r=(b.revenus||[]).reduce((a,x)=>a+x.montant,0);
@@ -2362,7 +2369,8 @@ function calcBilan(Y){
     const d=ch+ab+ep+pl+co;
     rev+=r;dep+=d;
     cats.charges+=ch;cats.abonnements+=ab;cats.epargne+=ep;cats.plaisirs+=pl;cats.courses+=co;
-    lignes.push({k,m:MS[parseInt(k.slice(5))-1],r,d,s:r-d,ep});
+    const rt=(b.revenus||[]).filter(x=>x.retrait).reduce((a,x)=>a+x.montant,0);retr+=rt;
+    lignes.push({k,m:MS[parseInt(k.slice(5))-1],r,d,s:r-d,ep,rt,tx:tauxEp(ep,r-rt)});
   });
   // Patrimoine
   const snaps=D.patrimoine.snapshots||{};
@@ -2370,7 +2378,7 @@ function calcBilan(Y){
   const net=k=>ta(snaps[k])-(snaps[k].passifs||[]).reduce((a,x)=>a+x.valeur,0);
   const pat=ks.length?{deb:net(ks[0]),fin:net(ks[ks.length-1]),
                        mDeb:MN[parseInt(ks[0].slice(5))-1],mFin:MN[parseInt(ks[ks.length-1].slice(5))-1],n:ks.length}:null;
-  return{mois,lignes,cats,rev,dep,pat};
+  return{mois,lignes,cats,rev,dep,pat,retr,tx:tauxEp(cats.epargne,rev-retr)};
 }
 
 function renderBilan(){
@@ -2394,18 +2402,11 @@ function renderBilan(){
   const mx=Math.max(...B.lignes.map(x=>Math.abs(x.s)),1);
 
   // Carte héro : patrimoine si dispo, sinon solde de l'année
-  let hero;
-  if(false){
-    const ev=B.pat.fin-B.pat.deb;
-    const pct=B.pat.deb!==0?(ev/Math.abs(B.pat.deb)*100):0;
-    hero=`<div class="hero"><div class="hero-lbl">Patrimoine net</div>
-      <div class="hero-val">${fmt(B.pat.fin)}</div>
-      <div class="hero-sub">${ev>=0?'+':'−'}${fmt(Math.abs(ev))} depuis ${B.pat.mDeb.toLowerCase()} · ${ev>=0?'+':'−'}${Math.abs(pct).toFixed(1)} %</div></div>`;
-  } else {
-    hero=`<div class="hero"><div class="hero-lbl">Solde de l'année</div>
-      <div class="hero-val">${solde>=0?'+':'−'}${fmt(Math.abs(solde))}</div>
-      <div class="hero-sub">${B.mois.length} mois enregistré${B.mois.length>1?'s':''}</div></div>`;
-  }
+  const tx=B.tx;
+  const hero=`<div class="hero"><div class="hero-lbl">Taux d'épargne ${Y}</div>
+      <div class="hero-val">${tx===null?'—':fmtTx(tx)}</div>
+      <div class="hero-sub">${fmk(B.cats.epargne)} épargnés sur ${fmk(B.rev-B.retr)} de revenus · ${B.mois.length} mois${B.retr>0?`<br><span style="opacity:.8">hors ${fmk(B.retr)} de retraits d'épargne</span>`:''}</div>
+      <div class="hero-jg"><i style="width:${tx===null?0:Math.max(0,Math.min(100,tx))}%"></i></div></div>`;
 
   // Barres mensuelles
   const bars=B.lignes.map((x,i)=>{
@@ -2423,7 +2424,7 @@ function renderBilan(){
     detail=`<span class="ci-hint"><i class="ti ti-hand-click"></i> Touche un mois pour le détail</span>`;
   }else{
     const x=B.lignes[_biSel];
-    detail=`<span class="ci-n">${x.m} ${Y}</span>
+    detail=`<span class="ci-n">${x.m} ${Y} <span style="color:var(--tx2);font-weight:400">· épargne ${x.tx===null?'—':fmtTx(x.tx)}</span></span>
       <span class="ci-p" style="color:${x.s>=0?'var(--pos)':'var(--neg)'}">${x.s>=0?'+':'−'}${fmt(Math.abs(x.s))}</span>
       <span class="ci-v">${fmk(x.r)} · ${fmk(x.d)}</span>`;
   }
@@ -2434,7 +2435,7 @@ function renderBilan(){
   const catsTri=Object.entries(B.cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   const catMax=catsTri.length?catsTri[0][1]:1;
 
-  box.innerHTML=tabs+`
+  box.innerHTML=tabs+retraitBandeau()+`
     ${hero}
     <div class="sgrid">
       <div class="scard"><div class="slbl">Entrées</div><div class="sval g">${fmk(B.rev)}</div></div>
@@ -2868,10 +2869,11 @@ function biPdfConstruire(Y){
   if(!B.mois.length)titre(`Bilan annuel ${Y} · Budget`,`Aucun budget enregistré pour ${Y}.`);
   else{
     titre(`Bilan annuel ${Y} · Budget`,`${B.mois.length} mois enregistré${B.mois.length>1?'s':''} · ${nomK(B.mois[0])} à ${nomK(B.mois[B.mois.length-1])}`);
-    kpis([['Entrées',fmk(B.rev),VE],['Sorties',fmk(B.dep),RO],["Solde de l'année",sgk(s),sgnC(s)],['Dépense moyenne / mois',fmk(B.dep/Math.max(1,B.mois.length))]]);
+    kpis([["Taux d'épargne",B.tx===null?'—':fmtTx(B.tx),VI],['Entrées',fmk(B.rev),VE],['Sorties',fmk(B.dep),RO],['Dépense moyenne / mois',fmk(B.dep/Math.max(1,B.mois.length))]]);
     section('Solde mois par mois');
-    tableau([{w:155},{w:90,a:'r'},{w:90,a:'r'},{w:90,a:'r'},{w:90,a:'r'}],['MOIS','ENTRÉES','SORTIES','DONT ÉPARGNE','SOLDE'],
-      B.lignes.map(x=>[nomK(x.k),fmt(x.r),fmt(x.d),fmt(x.ep),{t:sgn(x.s),col:sgnC(x.s)}]));
+    tableau([{w:115},{w:85,a:'r'},{w:85,a:'r'},{w:85,a:'r'},{w:60,a:'r'},{w:85,a:'r'}],['MOIS','ENTRÉES','SORTIES','DONT ÉPARGNE','TAUX','SOLDE'],
+      B.lignes.map(x=>[nomK(x.k),fmt(x.r),fmt(x.d),fmt(x.ep),{t:x.tx===null?'—':fmtTx(x.tx),col:VI},{t:sgn(x.s),col:sgnC(x.s)}]));
+    note("Taux d'épargne = épargne versée ÷ revenus"+(B.retr>0?` hors retraits d'épargne (${fmt(B.retr)} exclus).`:'.'));
     const CL={charges:['Charges fixes','#1D9E75'],courses:['Courses','#E0A32E'],plaisirs:['Plaisirs & Autres','#D85A30'],abonnements:['Abonnements','#8B7CF0'],epargne:['Épargne','#185FA5']};
     const ct2=Object.entries(B.cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]),mx=ct2.length?ct2[0][1]:1;
     section("Où est parti l'argent");
@@ -2952,6 +2954,61 @@ async function biPdfPartager(){
   // Repli : téléchargement direct
   try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();a.remove();}catch(e){}
   closeOv();
+}
+
+
+// ============ TAUX D'ÉPARGNE & RETRAITS ============
+function tauxEp(ep,rev){return rev>0?ep/rev*100:null;}
+function fmtTx(v){return v.toFixed(1).replace('.',',')+' %';}
+const RETRAIT_RE=/\b(sortie|retrait|livret|ldd|lep|pea|assurance vie|av\b|epargne|cel\b|pel\b)/;
+function retraitProbable(it){return RETRAIT_RE.test(etqNorm(it.nom));}
+function retraitsTous(){
+  const r=[];
+  Object.keys(D.budgets||{}).sort().reverse().forEach(k=>((D.budgets[k]||{}).revenus||[]).forEach(it=>r.push({k,it})));
+  return r;
+}
+function retraitsAVerifier(){return retraitsTous().filter(x=>x.it.retrait===undefined&&retraitProbable(x.it));}
+function retraitBandeau(){
+  if(D._retraitBandeauMasque)return'';
+  const l=retraitsAVerifier();if(!l.length)return'';
+  const noms=[...new Set(l.map(x=>x.it.nom))].slice(0,3).join(', ');
+  return`<div class="infobox" style="margin:0 0 8px"><i class="ti ti-arrows-exchange" style="font-size:14px;flex-shrink:0"></i>
+    <div><b>${l.length} ligne${l.length>1?'s':''} de revenus</b> ${l.length>1?'ressemblent':'ressemble'} à des retraits d'épargne (${noms}${l.length>3?'…':''}). Elles faussent ton taux.</div></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px"><button type="button" class="etqbtn" onclick="openRetraits()">Vérifier</button>
+    <button type="button" class="etqbtn etqg" onclick="retraitPlusTard()">Plus tard</button></div>`;
+}
+function retraitPlusTard(){D._retraitBandeauMasque=true;sv();renderBilan();}
+let _rx=null,_rxTout=false;
+function openRetraits(){
+  _rx={};_rxTout=false;
+  retraitsTous().forEach(({k,it})=>{_rx[k+'|'+it.id]=it.retrait===true||(it.retrait===undefined&&retraitProbable(it));});
+  openOv("Retraits d'épargne",rxHTML(),null);
+}
+function rxLigne(k,it){
+  const on=_rx[k+'|'+it.id];
+  return`<div class="pr" style="padding:10px 0;cursor:pointer" onclick="rxTog('${k}',${it.id})"><span class="rxck${on?' on':''}" id="rx-${k}-${it.id}">${on?'<i class="ti ti-check"></i>':''}</span>
+    <div class="pn"><div class="pa">${it.nom}</div><div class="pb">${MN[parseInt(k.slice(5))-1]} ${k.slice(0,4)}${it.compte?' · '+it.compte:''}</div></div><div class="pv">${fmt(it.montant)}</div></div>`;
+}
+function rxHTML(){
+  const tous=retraitsTous();
+  if(!tous.length)return`<div style="font-size:13px;color:var(--tx2)">Aucune ligne de revenus pour l'instant.</div>`;
+  const prob=tous.filter(x=>x.it.retrait===true||retraitProbable(x.it)),autres=tous.filter(x=>!prob.includes(x));
+  const vis=_rxTout?autres:autres.slice(0,4);
+  return`<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:4px">Coche les revenus qui sont en réalité de l'argent repris sur ton épargne. Ils sortent des revenus du taux d'épargne ; le solde du mois ne change pas.</div>
+    ${prob.length?`<div class="rxh">Probables</div><div class="card" style="padding:0 13px">${prob.map(x=>rxLigne(x.k,x.it)).join('')}</div>`:''}
+    ${autres.length?`<div class="rxh">Autres revenus (${autres.length})</div><div class="card" style="padding:0 13px">${vis.map(x=>rxLigne(x.k,x.it)).join('')}
+      ${autres.length>vis.length?`<div class="pr" style="padding:11px 0;justify-content:center;color:var(--acc);font-size:12.5px;cursor:pointer" onclick="_rxTout=true;document.getElementById('shb').innerHTML=rxHTML()">Tout afficher</div>`:''}</div>`:''}
+    <button type="button" class="sbtn" style="background:linear-gradient(145deg,#6C5CE7,#4B3FD4)" onclick="rxValider()">Valider</button>`;
+}
+function rxTog(k,id){
+  const c=k+'|'+id;_rx[c]=!_rx[c];
+  const el=document.getElementById('rx-'+k+'-'+id);
+  if(el){el.classList.toggle('on',_rx[c]);el.innerHTML=_rx[c]?'<i class="ti ti-check"></i>':'';}
+}
+function rxValider(){
+  retraitsTous().forEach(({k,it})=>{const v=_rx[k+'|'+it.id];if(v)it.retrait=true;else if(it.retrait!==undefined||retraitProbable(it))it.retrait=false;});
+  sv();closeOv();render();
+  if(document.getElementById('scr-bilan').classList.contains('on'))renderBilan();
 }
 
 // ---- Plaisirs par étiquette (bilan) ----
@@ -4595,7 +4652,11 @@ function etqVers(fn){closeOv();setTimeout(fn,70);}
 function etqUsages(id){let n=0;Object.values(D.budgets||{}).forEach(b=>((b&&b.plaisirs)||[]).forEach(x=>{if((x.tags||[]).includes(id))n++;}));return n;}
 function etqReglagesBloc(){
   const n=etqEnAttente().length;
-  return`<div class="stl" style="margin:2px 2px 6px">Plaisirs &amp; Autres</div>
+  const nr=retraitsTous().filter(x=>x.it.retrait).length;
+  return`<div class="stl" style="margin:2px 2px 6px">Revenus</div>
+    ${bkMenuRow2("etqVers(openRetraits)",'#185FA5','ti-arrows-exchange',"Retraits d'épargne",nr?nr+' ligne'+(nr>1?'s':'')+' marquée'+(nr>1?'s':''):'Aucune ligne marquée',true)}
+    <div style="height:12px"></div>
+    <div class="stl" style="margin:2px 2px 6px">Plaisirs &amp; Autres</div>
     ${bkMenuRow2("etqVers(openEtqGestion)",'#E0558F','ti-tags','Étiquettes',D.etiquettes.length+' étiquettes · ajouter, renommer, supprimer')}
     ${bkMenuRow2("etqVers(openRattrapage)",'#6C5CE7','ti-tag',"Étiqueter l'historique",n?n+' dépense'+(n>1?'s':'')+' sans étiquette':'Tout est étiqueté',true)}
     <div style="height:12px"></div>`;
@@ -4651,7 +4712,8 @@ function openOv(title,body,delCb){
 function closeOv(e){if(!e||e.target===document.getElementById('ov')){document.getElementById('ov').classList.remove('on');dc=null;}}
 function execDel(){if(dc)dc();closeOv();}
 function selChip(el){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');
-  if(el.dataset.cat){const w=document.getElementById('etqW');if(w)w.style.display=el.dataset.cat==='plaisirs'?'':'none';}}
+  if(el.dataset.cat){const w=document.getElementById('etqW');if(w)w.style.display=el.dataset.cat==='plaisirs'?'':'none';
+    const r=document.getElementById('retW');if(r)r.style.display=el.dataset.cat==='revenus'?'':'none';}}
 
 function bForm(item,section){
   const cat=CATS.find(c=>c.key===section)||{};
@@ -4667,6 +4729,9 @@ function bForm(item,section){
   return`<div class="fg"><label class="fl">Catégorie</label><div class="chips">${cChips}</div></div>
     <div class="fg"><label class="fl">Libellé</label><input class="fi" id="fn" value="${item?item.nom:''}" placeholder="Ex: Dépense" oninput="etqMaj(this.value)"></div>
     ${etqBlocForm(section==='plaisirs')}
+    <div class="fg" id="retW" style="${section==='revenus'?'':'display:none'}"><div class="toggle-row" style="margin:0">
+      <div><div class="toggle-lbl">Retrait d'épargne</div><div class="toggle-sub">Argent repris sur ton épargne : exclu des revenus du taux d'épargne</div></div>
+      <label class="toggle"><input type="checkbox" id="fRet" ${item&&item.retrait?'checked':''}><span class="tslider"></span></label></div></div>
     <div class="fg"><label class="fl">Montant (€)</label><input class="fi" id="fm" type="number" step="0.01" value="${item?item.montant:''}" placeholder="0.00" inputmode="decimal"></div>
     ${df}<div class="fg"><label class="fl">Compte</label><select class="fs" id="fc">${cOpts}</select></div>${sf}
     <button class="sbtn" onclick="svB()">Enregistrer</button>`;
@@ -4687,9 +4752,11 @@ function svB(){
   const obj={id:nid(),nom,montant,compte};if(date)obj.date=date;if(statut)obj.statut=statut;
   const anc=eid!==null?(b[es]||[]).find(x=>x.id===eid):null;
   if(cat==='plaisirs')etqAppliquer(obj,anc);
+  const fr=document.getElementById('fRet');if(cat==='revenus'&&fr)obj.retrait=!!fr.checked;
   if(es!==cat&&eid!==null){b[es]=b[es].filter(x=>x.id!==eid);b[cat].push(obj);}
   else if(eid!==null){const a=b[es],i=a.findIndex(x=>x.id===eid);if(i>=0){a[i]={...a[i],nom,montant,date,compte,statut};
-    if(cat==='plaisirs'){if(obj.tags)a[i].tags=obj.tags;else delete a[i].tags;}}}
+    if(cat==='plaisirs'){if(obj.tags)a[i].tags=obj.tags;else delete a[i].tags;}
+    if(cat==='revenus'&&obj.retrait!==undefined)a[i].retrait=obj.retrait;}}
   else{b[cat].push(obj);goc().add(cat);}
   sv();render();closeOv();
 }
