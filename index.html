@@ -401,6 +401,15 @@ html[data-theme="dark"] .rtag{color:#6FA8E0}
 .rxck{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:#fff}
 .rxck.on{background:#185FA5;border-color:#185FA5}
 .rxh{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin:12px 2px 6px}
+.rav{background:rgba(255,255,255,.13);border-radius:13px;padding:10px 12px;margin-top:12px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.rav-r1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rav-a{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.78)}
+.rav-b{font-size:19px;font-weight:600;color:#fff;white-space:nowrap}
+.rav-jg{height:6px;background:rgba(255,255,255,.22);border-radius:3px;margin-top:8px;overflow:hidden}
+.rav-jg i{display:block;height:100%;background:#fff;border-radius:3px}
+.rav-c{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:rgba(255,255,255,.82);margin-top:6px}
+.rav-n{font-size:11px;color:rgba(255,255,255,.88);margin-top:6px;line-height:1.4}
+.rav-n.amb{color:#FFE2A8}.rav-n.vert{color:#C9F2D9}
 .bi-empty{padding:26px 15px;text-align:center;font-size:12.5px;color:var(--tx2);line-height:1.6}
 
 .htrack{position:relative}
@@ -520,6 +529,7 @@ html[data-theme="light"] .rth button{color:#5B4BD6}
       <div class="hero-lbl" id="tsolLbl">Solde du mois</div>
       <div class="hero-val" id="tsol">0 €</div>
       <div class="hero-sub" id="hsub"></div>
+      <div id="rav"></div>
     </div>
     <div class="sgrid">
       <div class="scard"><div class="slbl">Revenus</div><div class="sval g" id="trev">0 €</div></div>
@@ -857,6 +867,7 @@ function baseBudget(){return{
 function newMonth(prev){
   const p=JSON.parse(JSON.stringify(prev));
   p._closed=false;delete p._isNew;delete p._hideCourses;
+  ['_ravOff','_ravSem','_ravNote','_ravRevInit','_ravRevVu'].forEach(c=>delete p[c]);
   ['charges','abonnements'].forEach(k=>{p[k].forEach(i=>{i.statut='Planifié';i.date='';});});
   p.plaisirs=[];p.courses.semaines.forEach(s=>{s.reel=null;});
   p.epargne.forEach(i=>{i.statut='Planifié';i.date='';});
@@ -1028,7 +1039,12 @@ function openBudgetSettings(){
     return;
   }
   const coursesHidden=!!b._hideCourses;
-  openOv('Paramètres budget — '+MN[cm]+' '+cy,`${blocEpi}${etqReglagesBloc()}<div class="stl" style="margin:2px 2px 6px">Courses</div>
+  openOv('Paramètres budget — '+MN[cm]+' '+cy,`${blocEpi}${etqReglagesBloc()}<div class="stl" style="margin:2px 2px 6px">Suivi de la semaine</div>
+    <div class="toggle-row" style="margin-bottom:12px">
+      <div><div class="toggle-lbl">Reste à vivre hebdo</div><div class="toggle-sub">${MN[cm]} ${cy} uniquement · le mois suivant le réactive</div></div>
+      <label class="toggle"><input type="checkbox" ${b._ravOff?'':'checked'} onchange="toggleRav(this.checked)"><span class="tslider"></span></label>
+    </div>
+    <div class="stl" style="margin:2px 2px 6px">Courses</div>
     <div class="toggle-row">
       <div><div class="toggle-lbl">Masquer les courses</div><div class="toggle-sub">Cache les courses de ${MN[cm]} ${cy} uniquement (exclues des totaux)</div></div>
       <label class="toggle"><input type="checkbox" id="tog-courses" ${coursesHidden?'checked':''} onchange="toggleHideCourses(this.checked)"><span class="tslider"></span></label>
@@ -1291,6 +1307,7 @@ function renderB(){
     document.getElementById('tsol').textContent='—';document.getElementById('tepa').textContent='—';
     document.getElementById('bcats').innerHTML='';
     document.getElementById('hsub').textContent='';
+    const rz=document.getElementById('rav');if(rz)rz.innerHTML='';
     document.getElementById('bstack').innerHTML='';
     document.getElementById('bbars').innerHTML='';
     document.getElementById('btot').textContent='—';
@@ -1363,6 +1380,7 @@ function renderB(){
   const se=document.getElementById('tsol');
   se.textContent=(sol>=0?'+':'−')+fmk(Math.abs(sol));se.className='hero-val';
   document.getElementById('hsub').textContent=`${fmk(rv)} entrées · ${fmk(dp)} sorties`;
+  renderRav();
 
   // Actions en bas
   let acts='';
@@ -3009,6 +3027,143 @@ function rxValider(){
   retraitsTous().forEach(({k,it})=>{const v=_rx[k+'|'+it.id];if(v)it.retrait=true;else if(it.retrait!==undefined||retraitProbable(it))it.retrait=false;});
   sv();closeOv();render();
   if(document.getElementById('scr-bilan').classList.contains('on'))renderBilan();
+}
+
+
+// ============ RESTE À VIVRE HEBDO ============
+const JOURS_C=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+function ravTotal(a){return(a||[]).reduce((s,x)=>s+(x.montant||0),0);}
+// Reste à vivre = revenus − charges − abonnements − épargne − courses prévues
+function ravCalc(b){
+  const rev=ravTotal(b.revenus),ch=ravTotal(b.charges),ab=ravTotal(b.abonnements),ep=ravTotal(b.epargne);
+  const co=b._hideCourses?0:((b.courses&&b.courses.previsionnel)||0);
+  return{rev,ch,ab,ep,co,rav:rev-ch-ab-ep-co};
+}
+// 4 semaines lundi→dimanche ; jours avant le 1er lundi → semaine 1, après le dernier dimanche complet → semaine 4
+function ravSemaines(k){
+  const[y,m]=k.split('-').map(Number);
+  const der=new Date(y,m,0).getDate();
+  const dow1=new Date(y,m-1,1).getDay();            // 0 = dimanche
+  const lun1=1+((8-dow1)%7);                         // date du 1er lundi
+  const deb=[1,lun1+7,lun1+14,lun1+21],fin=[lun1+6,lun1+13,lun1+20,der];
+  return deb.map((d,i)=>({deb:d,fin:fin[i]}));
+}
+function ravSemDe(S,jour){for(let i=0;i<4;i++)if(jour<=S[i].fin)return i;return 3;}
+function ravDepenses(b,k,S){
+  const t=[0,0,0,0];
+  (b.plaisirs||[]).forEach(x=>{
+    let i=0;
+    if(isISO(x.date)){
+      const dk=x.date.slice(0,7);
+      i=dk<k?0:dk>k?3:ravSemDe(S,parseInt(x.date.slice(8),10));
+    }
+    t[i]+=x.montant||0;
+  });
+  return t;
+}
+// État complet du mois k (b = budget)
+function ravEtat(b,k){
+  const C=ravCalc(b),S=ravSemaines(k),dep=ravDepenses(b,k,S);
+  const auj=todayISO(),ka=auj.slice(0,7);
+  const statut=b._closed||k<ka?'passe':k>ka?'futur':'cours';
+  const c=statut==='cours'?ravSemDe(S,parseInt(auj.slice(8),10)):statut==='futur'?0:4;
+  const fige=b._ravSem||{};
+  const semaines=S.map((s,i)=>{
+    const avant=dep.slice(0,i).reduce((a,v)=>a+v,0);
+    let prevu;
+    if(i<c&&fige[i]!==undefined)prevu=fige[i];
+    else if(i<=c)prevu=(C.rav-avant)/(4-i);
+    else{ // estimation des semaines à venir
+      const dc=c<4?Math.max(dep[c],(C.rav-dep.slice(0,c).reduce((a,v)=>a+v,0))/(4-c)):0;
+      prevu=(C.rav-dep.slice(0,c).reduce((a,v)=>a+v,0)-dc)/(3-c);
+    }
+    return{...s,i,dep:dep[i],prevu,etat:i<c?'passee':i===c?'cours':'avenir'};
+  });
+  return{C,S:semaines,c,statut,k,totDep:dep.reduce((a,v)=>a+v,0)};
+}
+// Mémorise les montants des semaines écoulées et les revenus ajoutés en cours de mois
+function ravMemo(b,E){
+  if(E.statut!=='cours')return false;
+  let ch=false;
+  b._ravSem=b._ravSem||{};
+  E.S.forEach(s=>{if(s.etat==='passee'&&b._ravSem[s.i]===undefined){b._ravSem[s.i]=Math.round(s.prevu*100)/100;ch=true;}});
+  const rev=E.C.rev;
+  if(b._ravRevInit===undefined){b._ravRevInit=rev;b._ravRevVu=rev;ch=true;}
+  else if(Math.abs(rev-b._ravRevVu)>0.004){
+    const d=rev-b._ravRevVu;
+    const n=b._ravNote&&b._ravNote.s===E.c?b._ravNote:{s:E.c,d:0,j:todayISO()};
+    n.d+=d;n.j=todayISO();b._ravNote=n;b._ravRevVu=rev;ch=true;
+  }
+  return ch;
+}
+function ravArr(v){return Math.round(v).toLocaleString('fr-FR')+' €';}
+function renderRav(){
+  const z=document.getElementById('rav');if(!z)return;
+  const b=gcb(),k=bk(cm,cy);
+  if(!b||b._ravOff){z.innerHTML='';return;}
+  const E=ravEtat(b,k);
+  if(ravMemo(b,E))sv();
+  if(E.C.rav<=0){z.innerHTML='';return;}
+  if(E.statut==='passe'){
+    const p=E.totDep/E.C.rav*100;
+    z.innerHTML=`<div class="rav" onclick="openRav()"><div class="rav-r1"><span class="rav-a">Plaisirs du mois</span><span class="rav-b" style="font-size:16px">${ravArr(E.totDep).replace(' €','')} / ${ravArr(E.C.rav)}</span></div>
+      <div class="rav-jg"><i style="width:${Math.min(100,p)}%;${p>100?'background:#FFD38A':''}"></i></div>
+      <div class="rav-c"><span>Reste à vivre du mois</span><span>${p>100?'+'+ravArr(E.totDep-E.C.rav)+' au-delà':ravArr(E.C.rav-E.totDep)+' de côté'}</span></div></div>`;
+    return;
+  }
+  if(E.statut==='futur'){
+    z.innerHTML=`<div class="rav" onclick="openRav()"><div class="rav-r1"><span class="rav-a">Reste à vivre</span><span class="rav-b">≈ ${ravArr(E.C.rav/4)}</span></div>
+      <div class="rav-c"><span>${ravArr(E.C.rav)} prévus pour le mois</span><span>par semaine</span></div></div>`;
+    return;
+  }
+  const s=E.S[E.c],reste=s.prevu-s.dep,over=reste<0;
+  const fin=new Date(cy,cm,s.fin),jf=`jusqu'au ${JOURS_C[fin.getDay()]} ${s.fin}`;
+  const pc=s.prevu>0?Math.min(100,s.dep/s.prevu*100):100;
+  let note='';
+  if(over&&E.c<3){note=`<div class="rav-n amb">Les ${3-E.c>1?(3-E.c)+' semaines suivantes passent':'semaine suivante passe'} à ≈ ${ravArr(E.S[E.c+1].prevu)}${3-E.c>1?' chacune':''}.</div>`;}
+  else if(b._ravNote&&b._ravNote.s===E.c&&Math.abs(b._ravNote.d)>=1){
+    const d=b._ravNote.d;
+    note=`<div class="rav-n ${d>0?'vert':''}">${d>0?'+':'−'}${ravArr(Math.abs(d))} de revenus : reste à vivre réajusté.</div>`;
+  }else if(E.c>0){
+    const p=E.S[E.c-1],jour=parseInt(todayISO().slice(8),10);
+    if(jour-s.deb<3&&p.dep<p.prevu)note=`<div class="rav-n vert">Bien joué : ${ravArr(p.prevu-p.dep)} de côté la semaine dernière.</div>`;
+  }
+  z.innerHTML=`<div class="rav" onclick="openRav()"><div class="rav-r1"><span class="rav-a">Reste à vivre · sem. ${E.c+1}</span>
+      <span class="rav-b">${over?'+'+ravArr(-reste):'≈ '+ravArr(reste)}</span></div>
+    <div class="rav-jg"><i style="width:${over?100:pc}%;${over?'background:#FFD38A':''}"></i></div>
+    <div class="rav-c"><span>${over?`${ravArr(s.dep)} dépensés, ~${ravArr(s.prevu)} prévus`:`${ravArr(s.dep)} dépensés sur ~${ravArr(s.prevu)}`}</span><span>${jf}</span></div>${note}</div>`;
+}
+function openRav(){
+  const b=gcb(),k=bk(cm,cy);if(!b)return;
+  const E=ravEtat(b,k),C=E.C;
+  const aj=b._ravRevInit!==undefined?C.rev-b._ravRevInit:0;
+  const L=(a,v,st)=>`<div class="kv"${st?` style="${st}"`:''}><span>${a}</span><b>${v}</b></div>`;
+  let h=`<div class="card" style="padding:2px 13px;margin-bottom:10px">
+    ${L('Revenus','<span style="color:var(--pos)">+'+fmt(C.rev)+'</span>')}
+    ${Math.abs(aj)>=0.01?L('<span style="padding-left:10px;font-size:11.5px">dont ajoutés en cours de mois</span>','<span style="color:var(--tx2);font-weight:400">'+(aj>0?'+':'−')+fmt(Math.abs(aj))+'</span>'):''}
+    ${L('Charges fixes','−'+fmt(C.ch))}${L('Abonnements','−'+fmt(C.ab))}${L('Épargne prévue','−'+fmt(C.ep))}
+    ${b._hideCourses?'':L('Courses prévues','−'+fmt(C.co))}
+    ${L('<b style="color:var(--tx1)">Reste à vivre</b>',(C.rav<0?'−':'')+fmt(Math.abs(C.rav)))}</div>`;
+  if(C.rav<=0){
+    h+=`<div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i><div>Ce mois-ci, tes charges, abonnements, épargne et courses dépassent tes revenus : il n'y a pas de reste à vivre à répartir, l'encart est donc masqué.</div></div>`;
+  }else{
+    h+=`<div class="card" style="padding:2px 13px;margin-bottom:8px">${E.S.map(s=>{
+      const e=s.prevu-s.dep;
+      const dot=s.etat==='cours'?'#8B7CF0':s.etat==='avenir'?'var(--bd2)':e<0?'#E0A32E':'#22C55E';
+      const sous=s.etat==='avenir'?`prévu ~${ravArr(s.prevu)} (estimé)`:`prévu ~${ravArr(s.prevu)}${s.etat==='cours'?(b._ravNote&&b._ravNote.s===s.i?' · réajusté le '+parseInt(b._ravNote.j.slice(8),10):' · en cours'):''}`;
+      const droite=s.etat==='avenir'?'—':ravArr(s.dep);
+      const d2=s.etat==='avenir'?'':s.etat==='cours'?(e<0?'+'+ravArr(-e).replace(' €','')+' au-delà':ravArr(e).replace(' €','')+' restants'):(e<0?'+'+ravArr(-e).replace(' €','')+' au-delà':ravArr(e).replace(' €','')+' de côté');
+      return`<div class="pr" style="padding:10px 0;${s.etat==='avenir'?'opacity:.55':''}"><span style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0"></span>
+        <div class="pn"><div class="pa">Semaine ${s.i+1} · ${s.deb}–${s.fin}</div><div class="pb">${sous}</div></div>
+        <div style="text-align:right"><div class="pv">${droite}</div><div class="pb">${d2}</div></div></div>`;}).join('')}</div>
+    <div style="font-size:11px;color:var(--tx2);line-height:1.5">Montant de la semaine = ce qui n'est pas encore dépensé du reste à vivre ÷ semaines restantes, recalculé chaque lundi et dès qu'un revenu ou une charge change. Seules les dépenses Plaisirs &amp; Autres comptent. Indicatif : rien n'est bloqué.</div>`;
+  }
+  openOv('Reste à vivre · '+MN[cm].toLowerCase(),h,null);
+}
+function toggleRav(on){
+  const b=gcb();if(!b||b._closed)return;
+  if(on)delete b._ravOff;else b._ravOff=true;
+  sv();renderB();
 }
 
 // ---- Plaisirs par étiquette (bilan) ----
