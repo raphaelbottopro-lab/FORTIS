@@ -811,10 +811,10 @@ html[data-theme="light"] .rth button{color:#5B4BD6}
 <button type="button" id="fabAdd" onclick="openRapide()" aria-label="Dépense rapide"><i class="ti ti-plus"></i></button>
 
 <div class="nav">
-  <button class="nb on" onclick="go('budget')" id="tnb-budget"><i class="ti ti-wallet"></i>Budget</button>
-  <button class="nb" onclick="go('patrim')" id="tnb-patrim"><i class="ti ti-chart-line"></i>Patrimoine</button>
-  <button class="nb" onclick="go('projets')" id="tnb-projets"><i class="ti ti-target"></i>Projets</button>
-  <button class="nb" onclick="go('histo')" id="tnb-histo"><i class="ti ti-history"></i>Historique</button>
+  <button class="nb on" onpointerdown="go('budget')" id="tnb-budget"><i class="ti ti-wallet"></i>Budget</button>
+  <button class="nb" onpointerdown="go('patrim')" id="tnb-patrim"><i class="ti ti-chart-line"></i>Patrimoine</button>
+  <button class="nb" onpointerdown="go('projets')" id="tnb-projets"><i class="ti ti-target"></i>Projets</button>
+  <button class="nb" onpointerdown="go('histo')" id="tnb-histo"><i class="ti ti-history"></i>Historique</button>
 </div>
 
 <div class="ov" id="ov" onclick="closeOv(event)">
@@ -1008,6 +1008,7 @@ function migrerDates(){
 }
 function sv(){
   let ok=true;
+  _svN++;
   try{localStorage.setItem('bb3',JSON.stringify(D));}catch(e){ok=false;}
   svAlerte(!ok);
 }
@@ -1084,8 +1085,13 @@ function go(s){
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('on'));
   document.getElementById('scr-'+s).classList.add('on');
   document.getElementById('tnb-'+s).classList.add('on');
-  render();
+  const t=++_goN;
+  if(_vu[s]===cleEcran(s))return;   // rien n'a changé depuis la dernière visite
+  requestAnimationFrame(()=>setTimeout(()=>{if(t===_goN)render();},0));
 }
+// Redessin des onglets : on retient l'état affiché pour éviter de tout redessiner à chaque visite
+let _goN=0,_svN=0;const _vu={};
+function cleEcran(s){return[s,_svN,cm,cy,pm,py,D._theme||'',_fStat||'',(typeof _fEtq!=='undefined'&&_fEtq)||'',todayISO()].join('|');}
 
 function updMDisp(){
   document.getElementById('mdisp').innerHTML=MN[cm]+' '+cy+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
@@ -1127,7 +1133,7 @@ function openBudgetSettings(){
   if(!b){openOv('Paramètres budget',`<div style="padding:8px 0;font-size:13px;color:var(--tx2)">Crée d'abord le budget de ce mois.</div>`,null);return;}
   const kE=bk(cm,cy),estEpi=kE===D.epingle;
   const blocEpi=`<div class="stl" style="margin:2px 2px 6px">Mois d'ouverture</div>
-    <button type="button" onpointerdown="epingleDepuisReglages(event)" style="display:flex;align-items:center;gap:11px;width:100%;padding:11px 2px;background:transparent;border:none;border-bottom:1px solid var(--bd1);margin-bottom:12px;text-align:left;font-family:inherit;cursor:pointer">
+    <button type="button" onclick="epingleDepuisReglages(event)" style="display:flex;align-items:center;gap:11px;width:100%;padding:11px 2px;background:transparent;border:none;border-bottom:1px solid var(--bd1);margin-bottom:12px;text-align:left;font-family:inherit;cursor:pointer">
       <span class="pi" style="background:${softGrad('#6C5CE7')};box-shadow:inset 0 0 0 1px #6C5CE726"><i class="ti ${estEpi?'ti-pin-filled':'ti-pin'}" style="color:#6C5CE7"></i></span>
       <span style="flex:1;min-width:0">
         <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${estEpi?'Mois épinglé':'Épingler ce mois'}</span>
@@ -1286,7 +1292,7 @@ function epingleConfirm(k){
   openOv('Épingler '+MN[parseInt(k.slice(5))-1].toLowerCase()+' ?',`
     <div class="infobox"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
       <div>Le <b>budget</b> et le <b>patrimoine</b> s'ouvriront désormais sur <b>${nomMoisMin(k)}</b>.${actuel?` ${actuel.charAt(0).toUpperCase()+actuel.slice(1)} restera accessible par les flèches.`:''}</div></div>
-    <button type="button" class="sbtn" onpointerdown="epingleGo('${k}',event)"><i class="ti ti-pin-filled"></i> Épingler ${MN[parseInt(k.slice(5))-1].toLowerCase()}</button>
+    <button type="button" class="sbtn" onclick="epingleGo('${k}',event)"><i class="ti ti-pin-filled"></i> Épingler ${MN[parseInt(k.slice(5))-1].toLowerCase()}</button>
     <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
 }
 function epingleGo(k,ev){
@@ -1348,7 +1354,7 @@ function epingleAppuiP(){
   const nom=MN[pm].toLowerCase();
   openOv('Épingler '+nom+' ?',`
     <div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">${MN[pm]} ${py} n'a pas encore de budget. L'épingle en a besoin pour fonctionner.</div>
-    <button type="button" class="sbtn" onpointerdown="creerBudgetEtEpingler('${k}',event)"><i class="ti ti-plus"></i> Créer le budget et épingler</button>
+    <button type="button" class="sbtn" onclick="creerBudgetEtEpingler('${k}',event)"><i class="ti ti-plus"></i> Créer le budget et épingler</button>
     <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
 }
 function creerBudgetEtEpingler(k,ev){
@@ -1371,7 +1377,7 @@ function proposerApresCloture(k){
     <div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">
       ${existe?`Veux-tu que Fortis s'ouvre désormais sur <b style="color:var(--tx1)">${nom} ${n.y}</b> ?`
               :`${MN[n.m]} ${n.y} n'est pas encore créé.`}</div>
-    <button type="button" class="sbtn" onpointerdown="apresClotureGo('${nk}',event)">
+    <button type="button" class="sbtn" onclick="apresClotureGo('${nk}',event)">
       <i class="ti ${existe?'ti-pin-filled':'ti-plus'}"></i> ${existe?'Épingler '+nom:'Créer et épingler '+nom}</button>
     <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">
       ${existe?'Garder '+MN[m-1].toLowerCase():'Plus tard'}</button>`,null);
@@ -1899,15 +1905,15 @@ function openPatrimSettings(){
       <div style="font-size:13px;font-weight:500;color:var(--tx1)">${fmk(o.montant)} par mois</div>
       <div style="font-size:11px;color:var(--tx2);margin-top:2px">à partir de ${lbl(o.from)}</div>
     </div>
-    <button type="button" onpointerdown="objEdit(${i},event)" style="background:transparent;border:none;color:var(--tx2);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-edit"></i></button>
-    ${objs.length>1?`<button type="button" onpointerdown="objDel(${i},event)" style="background:transparent;border:none;color:var(--neg);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-trash"></i></button>`:''}
+    <button type="button" onclick="objEdit(${i},event)" style="background:transparent;border:none;color:var(--tx2);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-edit"></i></button>
+    ${objs.length>1?`<button type="button" onclick="objDel(${i},event)" style="background:transparent;border:none;color:var(--neg);font-size:17px;padding:6px;cursor:pointer"><i class="ti ti-trash"></i></button>`:''}
   </div>`).join('');
   openOv("Objectifs d'épargne",`
     <div style="font-size:11.5px;color:var(--tx2);line-height:1.55;margin-bottom:10px">
       Chaque mois est comparé à l'objectif en vigueur à sa date. Ajoute une période quand ton objectif change.
     </div>
     ${lignes}
-    <button type="button" class="sbtn" style="background:transparent;border:1px solid var(--acc);color:var(--acc);margin-top:12px" onpointerdown="objEdit(null,event)">
+    <button type="button" class="sbtn" style="background:transparent;border:1px solid var(--acc);color:var(--acc);margin-top:12px" onclick="objEdit(null,event)">
       <i class="ti ti-plus"></i> Nouvel objectif
     </button>
     <div class="stl" style="margin:20px 2px 4px">Objectif de patrimoine</div>
@@ -1928,10 +1934,10 @@ function objEdit(i,ev){
   closeOv();
   setTimeout(()=>{
     openOv(o?"Modifier l'objectif":"Nouvel objectif",`
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px">
-        <div class="fg"><label class="fl">À partir de</label><input class="fi" id="objFrom" type="month" value="${def}"></div>
-        <div class="fg"><label class="fl">Objectif mensuel (€)</label><input class="fi" id="objMt" type="number" step="10" min="0" inputmode="decimal" value="${o?o.montant:200}"></div>
-      </div>
+      <div class="fg"><label class="fl">À partir de</label><div class="g2pj">
+        <select class="fs" id="objFromM">${MN.map((m,j)=>`<option value="${j+1}" ${parseInt(def.slice(5))===j+1?'selected':''}>${m}</option>`).join('')}</select>
+        <select class="fs" id="objFromY">${(()=>{const a0=new Date().getFullYear(),y=parseInt(def.slice(0,4)),L=[];for(let a=Math.min(y,a0-5);a<=Math.max(y,a0+5);a++)L.push(a);return L.map(a=>`<option ${a===y?'selected':''}>${a}</option>`).join('');})()}</select></div></div>
+      <div class="fg"><label class="fl">Objectif mensuel (€)</label><input class="fi" id="objMt" type="number" step="10" min="0" inputmode="decimal" value="${o?o.montant:200}"></div>
       <div style="font-size:11px;color:var(--tx2);line-height:1.55;margin-bottom:13px">
         Cet objectif s'applique à ce mois et aux suivants, jusqu'à la période suivante.
       </div>
@@ -1940,7 +1946,7 @@ function objEdit(i,ev){
 }
 function objSave(ancien,ev){
   if(ev&&ev.stopPropagation)ev.stopPropagation();
-  const from=document.getElementById('objFrom').value;
+  const from=document.getElementById('objFromY').value+'-'+String(document.getElementById('objFromM').value).padStart(2,'0');
   const mt=parseFloat(document.getElementById('objMt').value);
   if(!from||isNaN(mt)||mt<0)return;
   if(!Array.isArray(D.objectifs))D.objectifs=[];
@@ -2013,7 +2019,7 @@ function renderMoyenne(){
     const x=L[_epSel];
     act=`<span class="cn">${x.m} ${year}</span>
       <span class="cp" style="color:${x.d>0?'var(--pos)':x.d<0?'var(--neg)':'var(--tx2)'}">${x.d===0?'—':fD(x.d)}</span>
-      <span class="lnk" onpointerdown="epToggle(event)">${x.ex?'Réintégrer':'Exclure de la moyenne'}</span>`;
+      <span class="lnk" onclick="epToggle(event)">${x.ex?'Réintégrer':'Exclure de la moyenne'}</span>`;
   }
   const reste=Math.max(0,12-L.length);
   const base=(moyH!==null?moyH:moy);
@@ -2198,8 +2204,8 @@ function openObjPat(){
       La projection est linéaire : elle ne tient pas compte des rendements composés.
     </div>
     <button type="button" class="sbtn" onpointerdown="saveObjPat(event)">Enregistrer</button>
-    ${cur?`<button type="button" class="sbtn" style="background:transparent;color:var(--neg);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="effacerObjPat(event)">Retirer l'objectif</button>`:''}`,null);
-  setTimeout(()=>{const e=document.getElementById('opMt');if(e){e.focus();e.select();}},150);
+    ${cur?`<button type="button" class="sbtn" style="background:transparent;color:var(--neg);border:.5px solid var(--bd2);margin-top:8px" onclick="effacerObjPat(event)">Retirer l'objectif</button>`:''}`,null);
+  setTimeout(()=>{const e=document.getElementById('opMt');if(e){e.focus();try{const l=e.value.length;e.setSelectionRange(l,l);}catch(x){}}},150);
 }
 function saveObjPat(ev){
   if(ev&&ev.stopPropagation)ev.stopPropagation();
@@ -2235,7 +2241,7 @@ function openTheme(){
     {k:'light',ic:'ti-sun',col:'#E0A32E',lbl:'Toujours clair',sous:'Quel que soit le réglage'},
   ];
   openOv('Apparence',opts.map(o=>`
-    <button type="button" onpointerdown="setTheme('${o.k}',event)" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;${o.k==='light'?'':'border-bottom:1px solid var(--bd1);'}text-align:left;font-family:inherit;cursor:pointer">
+    <button type="button" onclick="setTheme('${o.k}',event)" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;${o.k==='light'?'':'border-bottom:1px solid var(--bd1);'}text-align:left;font-family:inherit;cursor:pointer">
       <span class="pi" style="background:${softGrad(o.col)};box-shadow:inset 0 0 0 1px ${o.col}26"><i class="ti ${o.ic}" style="color:${o.col}"></i></span>
       <span style="flex:1;min-width:0">
         <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${o.lbl}</span>
@@ -2299,7 +2305,7 @@ function renderSearch(){
     <div class="card">${res.map(r=>{
       const[Y,M]=r.k.split('-');
       const quand=r.date?dAff(r.date)+'/'+Y.slice(2):MS[parseInt(M)-1]+' '+Y;
-      return`<div class="pr" style="cursor:pointer" onpointerdown="allerA('${r.k}','${r.cat}',event)">
+      return`<div class="pr" style="cursor:pointer" onclick="allerA('${r.k}','${r.cat}',event)">
         <div class="pn"><div class="pa">${r.nom}</div>
           <div class="pb">${quand} · ${CAT_LBL[r.cat]}${r.compte?' · '+r.compte:''}</div></div>
         <div class="pv ${r.rev?'g':''}">${r.rev?'+':'−'}${fmt(r.montant)}</div>
@@ -2343,14 +2349,14 @@ function renderFiltre(b){
   const dispo=STATUTS.filter(s=>n[s.k]);
   if(!dispo.length){box.innerHTML='';return;}
   box.innerHTML=`<div class="fst-row">
-    <button type="button" class="fst${_fStat?'':' on'}" onpointerdown="fStat(null,event)">Tout <b>${total}</b></button>
+    <button type="button" class="fst${_fStat?'':' on'}" onclick="fStat(null,event)">Tout <b>${total}</b></button>
     ${dispo.map(s=>`<button type="button" class="fst${_fStat===s.k?' on':''}" data-c="${s.col}"
       style="${_fStat===s.k?`background:${s.col};border-color:${s.col}`:''}"
-      onpointerdown="fStat('${s.k}',event)"><i class="ti ${s.ic}" style="${_fStat===s.k?'':`color:${s.col}`}"></i> ${s.k} <b>${n[s.k]}</b></button>`).join('')}
+      onclick="fStat('${s.k}',event)"><i class="ti ${s.ic}" style="${_fStat===s.k?'':`color:${s.col}`}"></i> ${s.k} <b>${n[s.k]}</b></button>`).join('')}
   </div>
   ${_fStat?`<div class="fst-tot"><i class="ti ti-filter"></i>
      <span><b>${fmt(somme[_fStat]||0)}</b> sur ${n[_fStat]} ligne${n[_fStat]>1?'s':''} en « ${_fStat} »</span>
-     <span class="lnk-b" style="padding:0" onpointerdown="fStat(null,event)">Tout afficher</span></div>`:''}`;
+     <span class="lnk-b" style="padding:0" onclick="fStat(null,event)">Tout afficher</span></div>`:''}`;
 }
 
 // ============ RAPPEL DE FIN DE MOIS ============
@@ -2413,11 +2419,11 @@ function renderFinMois(){
     <div class="fm-h">
       <i class="ti ti-calendar-check" style="font-size:15px"></i>
       <span style="flex:1"><b>${titre}</b> · ${faits}/${etapes.length}</span>
-      <button type="button" class="fm-x" onpointerdown="finMasquer(event)" aria-label="Masquer"><i class="ti ti-x"></i></button>
+      <button type="button" class="fm-x" onclick="finMasquer(event)" aria-label="Masquer"><i class="ti ti-x"></i></button>
     </div>
     ${etapes.map(e=>{
       const ok=e.auto?e.fait:clCoche(k,e.id);
-      return`<div class="fm-l${ok?' ok':''}"${e.auto?'':` onpointerdown="clToggle('${e.id}',event)"`}>
+      return`<div class="fm-l${ok?' ok':''}"${e.auto?'':` onclick="clToggle('${e.id}',event)"`}>
         <i class="ti ${ok?'ti-circle-check':'ti-circle'}"></i><span>${e.lbl}</span>
         ${e.auto?'<span class="fm-a">auto</span>':''}</div>`;
     }).join('')}
@@ -3506,7 +3512,7 @@ function openExpress(){
       const pv=prevDe(sec,it);
       h+=`<div class="exr">${piH(it.type)}<div class="n"><div class="a">${it.nom}</div><div class="b2" id="exd-${sec}-${it.id}" data-base="${pv!==null?`${pm0} ${fmk(pv)}`:'nouveau'}" data-mois="${pm0}">${pv!==null?`${pm0} ${fmk(pv)}`:'nouveau'}</div></div>
         <input class="exi" id="exi-${sec}-${it.id}" type="text" inputmode="decimal" autocomplete="off" value="${String(Math.round((it.valeur||0)*100)/100).replace('.',',')}"
-          data-prev="${pv===null?'':pv}" data-sec="${sec}" data-pas="${sec==='passifs'?1:0}" oninput="expMaj(this)" onfocus="this.select()"></div>`;
+          data-prev="${pv===null?'':pv}" data-sec="${sec}" data-pas="${sec==='passifs'?1:0}" oninput="expMaj(this)"></div>`;
     });
     h+=`</div>`;
   });
@@ -3694,7 +3700,11 @@ function pjFormHTML(){
     h+=`<div class="fg"><label class="fl">Budget (€)</label><input class="fi" id="pjCible" type="text" inputmode="decimal" value="${F.cible.montant||''}" placeholder="0"></div>
       <div class="fg"><label class="fl">Mots qui le font pré-sélectionner</label><input class="fi" id="pjMots" value="${(F.mots||'').replace(/"/g,'&quot;')}" placeholder="costume, chemise, chaussures"></div>`;
   }
-  h+=`<div class="fg"><label class="fl">Échéance (optionnelle)</label><input class="fi" id="pjEch" type="month" value="${F.echeance||''}"></div>
+  const eY=F.echeance?parseInt(F.echeance.slice(0,4)):0,eM=F.echeance?parseInt(F.echeance.slice(5)):0,a0=new Date().getFullYear();
+  const ans=[];for(let a=Math.min(a0,eY||a0);a<=a0+10;a++)ans.push(a);
+  h+=`<div class="fg"><label class="fl">Échéance (optionnelle)</label><div class="g2pj">
+    <select class="fs" id="pjEchM"><option value="">Aucune</option>${MN.map((m,i)=>`<option value="${i+1}" ${eM===i+1?'selected':''}>${m}</option>`).join('')}</select>
+    <select class="fs" id="pjEchY">${ans.map(a=>`<option ${a===(eY||a0)?'selected':''}>${a}</option>`).join('')}</select></div></div>
     <div class="fg"><label class="fl">Couleur</label><div class="etqsw" id="pjCols">${ETQ_COULEURS.slice(0,10).map(c=>`<span class="${c===F.col?'on':''}" style="background:${c}" onclick="pjSet('col','${c}')"></span>`).join('')}</div></div>
     <div class="fg"><label class="fl">Icône</label><div class="etqic">${PJ_ICONES.map(ic=>`<span style="${ic===F.icon?`background:${F.col};color:#fff`:''}" onclick="pjSet('icon','${ic}')"><i class="ti ${ic}"></i></span>`).join('')}</div></div>
     <button type="button" class="sbtn" onclick="pjSave()">${(D.projets||[]).some(x=>x.id===F.id)?'Enregistrer':'Créer le projet'}</button>`;
@@ -3708,7 +3718,7 @@ function pjLire(){ // garde ce qui est déjà tapé avant de redessiner le formu
   if(g('pjCompte')!==null)F.compte=g('pjCompte');
   if(g('pjPart')!==null){const v=expNum(g('pjPart'));F.part=v&&v>0?v:null;}
   if(g('pjMots')!==null)F.mots=g('pjMots');
-  if(g('pjEch')!==null)F.echeance=g('pjEch')||'';
+  if(g('pjEchM')!==null){const m=g('pjEchM');F.echeance=m?g('pjEchY')+'-'+String(m).padStart(2,'0'):'';}
 }
 function pjRedessine(){const b=document.getElementById('shb');if(b)b.innerHTML=pjFormHTML();}
 function pjSet(k,v){pjLire();_pjF[k]=v;pjRedessine();}
@@ -3829,7 +3839,7 @@ function lpStop(){clearTimeout(_lpTimer);}
 
 // Variante de bkMenuRow acceptant une expression complète
 function bkMenuRow2(expr,col,ic,titre,sous,last){
-  return `<button type="button" onpointerdown="${expr}" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;${last?'':'border-bottom:1px solid var(--bd1);'}text-align:left;font-family:inherit;cursor:pointer">
+  return `<button type="button" onclick="${expr}" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 2px;background:transparent;border:none;${last?'':'border-bottom:1px solid var(--bd1);'}text-align:left;font-family:inherit;cursor:pointer">
     <span class="pi" style="background:${softGrad(col)};box-shadow:inset 0 0 0 1px ${col}26"><i class="ti ${ic}" style="color:${col}"></i></span>
     <span style="flex:1;min-width:0">
       <span style="display:block;font-size:13px;font-weight:500;color:var(--tx1)">${titre}</span>
@@ -3871,7 +3881,7 @@ function lgSupprimer(cat,id){
     openOv('Supprimer la ligne',`
       <div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">
         <b style="color:var(--tx1)">${it.nom}</b> · ${fmt(it.montant)}<br>Cette ligne sera retirée du mois.</div>
-      <button type="button" class="sbtn" style="background:#D85A30" onpointerdown="lgSupprimerGo('${cat}',${id})">Supprimer</button>
+      <button type="button" class="sbtn" style="background:#D85A30" onclick="lgSupprimerGo('${cat}',${id})">Supprimer</button>
       <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
   },70);
 }
@@ -4149,7 +4159,7 @@ function flashIndicateur(txt){
 function afficherMajBandeau(){
   const box=document.getElementById('majBandeau');
   if(!box)return;
-  box.innerHTML=`<div class="maj-b" onpointerdown="location.reload()">
+  box.innerHTML=`<div class="maj-b" onclick="location.reload()">
     <i class="ti ti-download"></i>
     <span><b>Mise à jour disponible</b> — toucher pour recharger</span>
     <i class="ti ti-chevron-right"></i></div>`;
@@ -4167,7 +4177,7 @@ function majIndicateur(){
     inconnu:   ['#7C8598','ti-help','Mode hors ligne inactif','Nécessite une ouverture depuis GitHub Pages'],
   }[_swEtat]||[];
   const[col,ic,titre,sous]=conf;
-  el.innerHTML=`<button type="button" onpointerdown="verifierMaj()" style="display:flex;align-items:center;gap:11px;width:100%;padding:13px;background:transparent;border:none;text-align:left;font-family:inherit;cursor:pointer">
+  el.innerHTML=`<button type="button" onclick="verifierMaj()" style="display:flex;align-items:center;gap:11px;width:100%;padding:13px;background:transparent;border:none;text-align:left;font-family:inherit;cursor:pointer">
     <span class="pi" style="background:${softGrad(col)};box-shadow:inset 0 0 0 1px ${col}26"><i class="ti ${ic}" style="color:${col}"></i></span>
     <span style="flex:1;min-width:0">
       <span style="display:block;font-size:13.5px;font-weight:600;color:var(--tx1)">${titre}</span>
@@ -4238,7 +4248,7 @@ function bkpRender(){
       <i class="ti ${i===0?'ti-shield-check':'ti-history'}" style="color:${i===0?'#1D9E75':'#7C8598'}"></i></div>
     <div class="pn"><div class="pa">${bkpQuand(b.t)}</div>
       <div class="pb">${b.res.budgets} budget${b.res.budgets>1?'s':''} · ${b.res.snapshots} mois figés${b.motif?' · '+b.motif:''}</div></div>
-    <button type="button" class="lnk-b" onpointerdown="bkpConfirm(${i},event)">Restaurer</button>
+    <button type="button" class="lnk-b" onclick="bkpConfirm(${i},event)">Restaurer</button>
   </div>`).join('');
 }
 function bkpConfirm(i,ev){
@@ -4266,7 +4276,7 @@ function bkpConfirm(i,ev){
     <div class="infobox"><i class="ti ti-shield-check" style="font-size:14px;flex-shrink:0"></i>
       <div>Une copie de l'état actuel est créée avant. Tu pourras revenir en arrière.</div></div>
     ${alerteAvantEcrasement()}
-    <button type="button" class="sbtn" onpointerdown="bkpRestaurer(${i},event)">Restaurer cette sauvegarde</button>
+    <button type="button" class="sbtn" onclick="bkpRestaurer(${i},event)">Restaurer cette sauvegarde</button>
     <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="closeOv()">Annuler</button>`,null);
 }
 function bkpRestaurer(i,ev){
@@ -5444,7 +5454,7 @@ function etqReglagesBloc(){
 function openEtqGestion(){
   openOv('Étiquettes',`${D.etiquettes.map((e,i)=>{const u=etqUsages(e.id);
       return bkMenuRow2("etqVers(()=>openEtqForm('"+e.id+"'))",e.col,e.icon,e.nom,u?u+' dépense'+(u>1?'s':''):'Pas encore utilisée',i===D.etiquettes.length-1);}).join('')}
-    <button type="button" class="sbtn" style="margin-top:14px" onpointerdown="etqVers(()=>openEtqForm(null))"><i class="ti ti-plus"></i> Nouvelle étiquette</button>`,null);
+    <button type="button" class="sbtn" style="margin-top:14px" onclick="etqVers(()=>openEtqForm(null))"><i class="ti ti-plus"></i> Nouvelle étiquette</button>`,null);
 }
 function openEtqForm(id){
   const e=id?etq(id):null;
@@ -5454,7 +5464,7 @@ function openEtqForm(id){
     <div class="fg"><label class="fl">Couleur</label><div class="etqsw" id="etqCols">${etqColsHTML()}</div></div>
     <div class="fg"><label class="fl">Icône</label><div class="etqic" id="etqIcs">${etqIconesHTML()}</div></div>
     <button type="button" class="sbtn" onclick="etqFSave()">Enregistrer</button>
-    ${e?`<button type="button" class="sbtn" style="background:transparent;color:#D85A30;border:.5px solid var(--bd2);margin-top:8px" onpointerdown="etqVers(()=>etqSupprimer('${e.id}'))">Supprimer l'étiquette</button>`:''}`,null);
+    ${e?`<button type="button" class="sbtn" style="background:transparent;color:#D85A30;border:.5px solid var(--bd2);margin-top:8px" onclick="etqVers(()=>etqSupprimer('${e.id}'))">Supprimer l'étiquette</button>`:''}`,null);
 }
 function etqIconesHTML(){return ETQ_ICONES.map(ic=>`<span class="${ic===_etqF.icon?'on':''}" style="${ic===_etqF.icon?`background:${_etqF.col};color:#fff`:''}" onclick="etqFIc('${ic}')"><i class="ti ${ic}"></i></span>`).join('');}
 function etqColsHTML(){return ETQ_COULEURS.map(c=>`<span class="${c===_etqF.col?'on':''}" style="background:${c}" onclick="etqFCol('${c}')"></span>`).join('');}
@@ -5470,8 +5480,8 @@ function etqSupprimer(id){
   const e=etq(id);if(!e)return;const u=etqUsages(id);
   openOv('Supprimer l\'étiquette',`<div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">
       <b style="color:var(--tx1)">${e.nom}</b> sera supprimée${u?` et retirée de ${u} dépense${u>1?'s':''}`:''}. Les montants ne changent pas.</div>
-    <button type="button" class="sbtn" style="background:#D85A30" onpointerdown="etqSupprimerGo('${id}')">Supprimer</button>
-    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onpointerdown="etqVers(openEtqGestion)">Annuler</button>`,null);
+    <button type="button" class="sbtn" style="background:#D85A30" onclick="etqSupprimerGo('${id}')">Supprimer</button>
+    <button type="button" class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="etqVers(openEtqGestion)">Annuler</button>`,null);
 }
 function etqSupprimerGo(id){
   D.etiquettes=D.etiquettes.filter(e=>e.id!==id);
@@ -5503,6 +5513,8 @@ function render(){
   const b=on('scr-budget'),p=on('scr-patrim'),h=on('scr-histo'),pj=on('scr-projets');
   if(b||(!p&&!h&&!pj))renderB();
   if(pj)renderProjets();
+  const vis=b?'budget':p?'patrim':h?'histo':pj?'projets':'budget';
+  _vu[vis]=cleEcran(vis);
   if(p)renderP();
   if(h)renderH();
 }
@@ -5632,12 +5644,12 @@ function renderRappel(){
     box.innerHTML=`<div class="warnbox"><i class="ti ti-alert-triangle" style="font-size:15px;flex-shrink:0"></i>
       <div><b>Tes données n'ont jamais été exportées.</b><br>
       <span style="opacity:.85">Les sauvegardes automatiques restent dans ce téléphone. Seul un export les met à l'abri.</span>
-      <div style="margin-top:6px"><span class="lnk-b" style="padding:0" onpointerdown="exportData()">Exporter maintenant →</span></div></div></div>`;
+      <div style="margin-top:6px"><span class="lnk-b" style="padding:0" onclick="exportData()">Exporter maintenant →</span></div></div></div>`;
   } else if(j>=EXPORT_DELAI){
     box.innerHTML=`<div class="warnbox"><i class="ti ti-alert-triangle" style="font-size:15px;flex-shrink:0"></i>
       <div>Dernier export il y a <b>${j} jours</b>.<br>
       <span style="opacity:.85">Un fichier exporté est ta seule protection en cas de perte du téléphone.</span>
-      <div style="margin-top:6px"><span class="lnk-b" style="padding:0" onpointerdown="exportData()">Exporter maintenant →</span></div></div>`;
+      <div style="margin-top:6px"><span class="lnk-b" style="padding:0" onclick="exportData()">Exporter maintenant →</span></div></div>`;
   } else {
     const[Y,M,J]=D._dernierExport.split('-');
     box.innerHTML=`<div class="okbox"><i class="ti ti-circle-check" style="font-size:15px;flex-shrink:0"></i>
