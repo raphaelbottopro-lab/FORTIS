@@ -3894,16 +3894,8 @@ function lgSupprimerGo(cat,id){
 }
 
 // ============ SAISIE RAPIDE ============
-// Le compte le plus employé dans le mois courant, pour pré-remplir
-function compteFrequent(){
-  const b=gcb();
-  if(!b)return comptesListe()[0];
-  const n={};
-  ['charges','abonnements','epargne','plaisirs','revenus'].forEach(k=>
-    (b[k]||[]).forEach(x=>{if(x.compte)n[x.compte]=(n[x.compte]||0)+1;}));
-  const tri=Object.entries(n).sort((a,b2)=>b2[1]-a[1]);
-  return tri.length?tri[0][0]:comptesListe()[0];
-}
+// Saisie rapide : toujours le compte par défaut (le premier de « Mes comptes »)
+function compteFrequent(){return comptesListe()[0];}
 // Le bouton n'apparaît que sur un budget ouvert
 function majFab(){
   const f=document.getElementById('fabAdd');
