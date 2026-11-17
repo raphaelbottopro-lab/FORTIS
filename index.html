@@ -473,6 +473,10 @@ html[data-theme="dark"] .ab{color:#8B7CF0}
 .pjrap{display:flex;align-items:center;gap:10px;margin:0 13px 10px;padding:9px 11px;border-radius:12px;background:rgba(108,92,231,.10);border:.5px solid rgba(139,124,240,.35)}
 .pjrap .a{font-size:12.5px;color:var(--tx1);font-weight:500;line-height:1.3}
 .defig-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;padding:11px;border-radius:13px;background:transparent;border:.5px solid var(--bd2);color:var(--tx2);font-size:13px;font-family:inherit;cursor:pointer}
+.pjrap.part{background:rgba(224,163,46,.10);border-color:rgba(224,163,46,.38)}
+.pjrap.ok{background:rgba(29,158,117,.10);border-color:rgba(29,158,117,.35)}
+.pjmini{height:5px;border-radius:3px;background:var(--bg2);margin-top:6px;overflow:hidden}
+.pjmini i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#F2C774,#E0A32E)}
 .bi-empty{padding:26px 15px;text-align:center;font-size:12.5px;color:var(--tx2);line-height:1.6}
 
 .htrack{position:relative}
@@ -1038,7 +1042,7 @@ function ld(){
       if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};
       if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};
       migrerDates();
-      assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();
+      assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();lienEpargneProjets();
       appliquerTheme();
       const b=buildSnaps();
       Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});
@@ -1047,7 +1051,7 @@ function ld(){
     }
   }catch(e){}
 }
-ld();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();
+ld();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();lienEpargneProjets();
 
 function gcb(){const k=bk(cm,cy);return D.budgets[k]||null;}
 function getBMs(){return Object.keys(D.budgets).sort();}
@@ -1459,7 +1463,7 @@ function renderB(){
       const meta=cat.ns?item.compte||'':[item.compte,dAff(item.date),item.statut].filter(Boolean).join(' · ');
       const dot=(cat.ns||(!readonly&&item.statut))?'':sdot(item.statut||'');
       const stBtn=(!cat.ns&&item.statut&&!readonly)?stBouton(cat.key,item):'';
-      html+=`<div class="row" onclick="dismissBanner()"${readonly?'':` onpointerdown="lpStart('${cat.key}',${item.id},event)" onpointerup="lpStop()" onpointercancel="lpStop()" onpointermove="lpStop()" oncontextmenu="return false"`}>${stBtn}${ligneIcone(cat,item)}<div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div>${item.ponctuel?`<div><span class="ptag"><i class="ti ti-pin"></i>ponctuelle</span></div>`:''}${cat.key==='plaisirs'?etqMinis(item.tags)+projTag(item):cat.key==='revenus'&&item.retrait?`<div><span class="rtag"><i class="ti ti-arrows-exchange"></i>Retrait d'épargne</span></div>`:''}</div>
+      html+=`<div class="row" onclick="dismissBanner()"${readonly?'':` onpointerdown="lpStart('${cat.key}',${item.id},event)" onpointerup="lpStop()" onpointercancel="lpStop()" onpointermove="lpStop()" oncontextmenu="return false"`}>${stBtn}${ligneIcone(cat,item)}<div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div>${item.ponctuel?`<div><span class="ptag"><i class="ti ti-pin"></i>ponctuelle</span></div>`:''}${cat.key==='epargne'?projTag(item):''}${cat.key==='plaisirs'?etqMinis(item.tags)+projTag(item):cat.key==='revenus'&&item.retrait?`<div><span class="rtag"><i class="ti ti-arrows-exchange"></i>Retrait d'épargne</span></div>`:''}</div>
         <div class="ra ${cat.ac}">${cat.sign}${fmt(item.montant)}</div>
         ${!readonly?`<button class="rb" onclick="oE('${cat.key}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
       </div>`;
@@ -1574,6 +1578,18 @@ function svSnap(){
     else{D.patrimoine.current=JSON.parse(JSON.stringify(d));delete D.patrimoine.current._pea;delete D.patrimoine.current._capture;}
   }
   sv();renderP();
+}
+// ---- Virements d'épargne existants rattachés à leur projet (une fois) ----
+function lienEpargneProjets(){
+  if(D._lienEp)return;
+  (D.projets||[]).filter(p=>p.type==='epargne').forEach(p=>{
+    const t=parseInt(String(p.id).slice(1),36),d0=isNaN(t)?null:new Date(t);
+    const k0=d0&&d0.getFullYear()>2020?d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0'):'0000-00';
+    const pn=etqNorm(p.nom);if(pn.length<3)return;
+    Object.keys(D.budgets||{}).forEach(k=>{if(k<k0)return;
+      ((D.budgets[k]||{}).epargne||[]).forEach(x=>{if(!x.projet&&etqNorm(x.nom).includes(pn))x.projet=p.id;});});
+  });
+  D._lienEp=1;
 }
 // ---- Cohérence du patrimoine (mois en cours, brouillons) ----
 function moisPrecCle(k){let[y,m]=k.split('-').map(Number);m--;if(m<1){m=12;y--;}return y+'-'+String(m).padStart(2,'0');}
@@ -3442,7 +3458,7 @@ function rpSugPick(i,ev){
   if(n)n.value=g.nom;
   if(m&&!rpMontant())m.value=String(g.montant).replace('.',',');
   if(_rpCat==='plaisirs'&&_etqP){_etqP.sel=new Set((g.tags||[]).filter(id=>etq(id)));_etqP.sug=etqSuggere(g.nom);etqRendre();}
-  if(_rpCat==='plaisirs')projMaj(g.nom);
+  if(_rpCat==='plaisirs'||_rpCat==='epargne')projMaj(g.nom);
   const z=document.getElementById('rpSugBox');if(z)z.innerHTML='';
   rpCalc();
 }
@@ -3699,8 +3715,14 @@ function openProjet(id){
     if(p.echeance)h+=L('À verser chaque mois',fmt(pjMensuel(p)||0)+` · ${pjMoisRestants(p)} mois`);
     else h+=L('Estimation',E.phrase);
     h+=L('Compte suivi',(p.compte||'—')+(p.part?` · part ${fmk(p.part)}`:''));
+    const bm=D.budgets[moisAujourdhui()],mm=pjMensuel(p);
+    if(bm&&mm>0){const pv=pjPrevu(bm,p.id);h+=L('Ce mois-ci',`<span style="color:${pv>=mm?'var(--pos)':'#E0A32E'}">${fmk(pv)} prévus sur ${fmk(mm)}</span>`);}
   }
   h+=`</div>`;
+  if(p.type==='epargne'){
+    const A=[];Object.keys(D.budgets||{}).sort().reverse().forEach(k=>((D.budgets[k]||{}).epargne||[]).forEach(x=>{if(x.projet===p.id)A.push({k,x});}));
+    h+=`<div class="stl" style="margin:4px 2px 6px">Virements rattachés</div><div class="card" style="padding:2px 13px;margin-bottom:10px">${A.length?A.map(({k,x})=>`<div class="kv"><span>${x.nom}<br><span style="font-size:10.5px">${MN[parseInt(k.slice(5))-1]} ${k.slice(0,4)}${x.statut==='Planifié'?' · planifié':''}</span></span><b>${fmt(x.montant)}</b></div>`).join(''):'<div class="kv"><span>Aucun virement rattaché. Dans Épargne, choisis ce projet sous le libellé.</span></div>'}</div>`;
+  }
   if(p.type==='depense'){
     const A=[];Object.keys(D.budgets||{}).sort().reverse().forEach(k=>((D.budgets[k]||{}).plaisirs||[]).forEach(x=>{if(x.projet===p.id)A.push({k,x});}));
     h+=`<div class="stl" style="margin:4px 2px 6px">Achats rattachés</div><div class="card" style="padding:2px 13px;margin-bottom:10px">${A.length?A.map(({k,x})=>`<div class="kv"><span>${x.nom}<br><span style="font-size:10.5px">${MN[parseInt(k.slice(5))-1]} ${k.slice(0,4)}</span></span><b>${fmt(x.montant)}</b></div>`).join(''):'<div class="kv"><span>Aucun achat pour l\'instant. Dans Plaisirs &amp; Autres, choisis ce projet sous les étiquettes.</span></div>'}</div>`;
@@ -3788,45 +3810,71 @@ function renderProjChips(){
 }
 function pjOuvrirDepuisSolde(id){go('projets');setTimeout(()=>openProjet(id),60);}
 // --- Rappel « à verser » dans la carte Épargne du budget ---
+function pjPrevu(b,id){return((b&&b.epargne)||[]).filter(x=>x.projet===id).reduce((a,x)=>a+(x.montant||0),0);}
 function pjRappelsEpargne(b,readonly){
   if(readonly||!b)return'';
   const k=bk(cm,cy);if(k<moisAujourdhui())return'';
   const L=(D.projets||[]).filter(p=>p.type==='epargne'&&!p.termine&&p.echeance&&k<=p.echeance&&pjMensuel(p)>0);
-  return L.filter(p=>!(b.epargne||[]).some(x=>etqNorm(x.nom).includes(etqNorm(p.nom)))).map(p=>
-    `<div class="pjrap"><span class="lic" style="background:${(p.col||'#6C5CE7')}24;color:${estSombre()?lightC(p.col||'#6C5CE7',40):(p.col||'#6C5CE7')}"><i class="ti ${p.icon||'ti-target'}"></i></span>
-      <div class="n"><div class="a">${p.nom} : ${fmk(pjMensuel(p))} à verser ce mois-ci</div><div class="b2">Pour tenir ${MN[parseInt(p.echeance.slice(5))-1].toLowerCase()} ${p.echeance.slice(0,4)}</div></div>
-      <button type="button" class="lnk-b" onclick="event.stopPropagation();pjAjouterVersement('${p.id}')">Ajouter</button></div>`).join('');
+  const ech=p=>MN[parseInt(p.echeance.slice(5))-1].toLowerCase()+' '+p.echeance.slice(0,4);
+  const ico=(p,ic)=>`<span class="lic" style="background:${(p.col||'#6C5CE7')}24;color:${estSombre()?lightC(p.col||'#6C5CE7',40):(p.col||'#6C5CE7')}"><i class="ti ${ic||p.icon||'ti-target'}"></i></span>`;
+  return L.map(p=>{
+    const m=pjMensuel(p),lie=(b.epargne||[]).some(x=>x.projet===p.id),pv=pjPrevu(b,p.id);
+    if(!lie)return`<div class="pjrap">${ico(p)}
+      <div class="n"><div class="a">${p.nom} : ${fmk(m)} à verser ce mois-ci</div><div class="b2">Pour tenir ${ech(p)}</div></div>
+      <button type="button" class="lnk-b" onclick="event.stopPropagation();pjAjouterVersement('${p.id}')">Ajouter</button></div>`;
+    if(pv>=m)return`<div class="pjrap ok">${ico(p,'ti-circle-check')}
+      <div class="n"><div class="a">${p.nom} : ${fmk(pv)} prévus sur ${fmk(m)}</div><div class="b2">Objectif du mois couvert</div></div></div>`;
+    return`<div class="pjrap part">${ico(p)}
+      <div class="n"><div class="a">${p.nom} : ${fmk(pv)} prévus sur ${fmk(m)}</div><div class="b2">Il manque ${fmk(m-pv)} pour tenir ${ech(p)}</div>
+      <div class="pjmini"><i style="width:${Math.min(100,pv/m*100)}%"></i></div></div></div>`;
+  }).join('');
 }
 function pjAjouterVersement(id){
   const p=D.projets.find(x=>x.id===id),b=gcb();if(!p||!b||b._closed)return;
-  b.epargne.push({id:nid(),nom:'Virement '+p.nom,montant:pjMensuel(p),compte:comptesListe()[0],date:'',statut:'Planifié'});
+  b.epargne.push({id:nid(),nom:'Virement '+p.nom,montant:pjMensuel(p),compte:comptesListe()[0],date:'',statut:'Planifié',projet:p.id});
   sv();renderB();
 }
 // --- Rattachement d'une dépense Plaisirs à un projet Dépenses ---
 function projetsDepense(){return(D.projets||[]).filter(p=>p.type==='depense'&&!p.termine);}
+let _projCat='plaisirs';
+function projetsEpargne(){return(D.projets||[]).filter(p=>p.type==='epargne'&&!p.termine);}
+function projListe(){return _projCat==='plaisirs'?projetsDepense():_projCat==='epargne'?projetsEpargne():[];}
 function projSuggere(nom){
   const n=etqNorm(nom);if(!n)return null;
-  for(const p of projetsDepense()){
+  for(const p of projListe()){
+    if(p.type==='epargne'){const pn=etqNorm(p.nom);if(pn.length>=3&&n.includes(pn))return p.id;continue;}
     const mots=(p.mots||'').split(',').map(etqNorm).filter(m=>m.length>=3);
     if(mots.some(m=>n.includes(m)))return p.id;
   }
   return null;
 }
 function projInit(item){_projSel=item&&item.projet?item.projet:null;_projManuel=!!(item&&item.projet);}
-function projBlocForm(visible){
-  const L=projetsDepense();if(!L.length)return'';
-  return`<div class="fg" id="projW" style="${visible?'':'display:none'}"><label class="fl">Projet</label><div class="etqs" id="projBox">${projChipsHTML()}</div></div>`;
+function projBlocForm(cat){
+  if(!projetsDepense().length&&!projetsEpargne().length)return'';
+  _projCat=cat;
+  return`<div class="fg" id="projW" style="${projListe().length?'':'display:none'}"><label class="fl">Projet</label><div class="etqs" id="projBox">${projChipsHTML()}</div></div>`;
 }
 function projChipsHTML(){
+  const ep=_projCat==='epargne',col=ep?'#1D9E75':'#E0A32E',txt=ep?'#fff':'#14151a';
   return`<span class="etq${_projSel?'':' on'}" style="${_projSel?'':'background:var(--tx2);border-color:var(--tx2)'}" onpointerdown="projPick(null,event)">Aucun</span>`+
-    projetsDepense().map(p=>`<span class="etq${_projSel===p.id?' on':''}" style="${_projSel===p.id?'background:#E0A32E;border-color:#E0A32E;color:#14151a':''}" onpointerdown="projPick('${p.id}',event)"><i class="ti ${p.icon||'ti-target'}"></i>${p.nom}</span>`).join('');
+    projListe().map(p=>`<span class="etq${_projSel===p.id?' on':''}" style="${_projSel===p.id?`background:${col};border-color:${col};color:${txt}`:''}" onpointerdown="projPick('${p.id}',event)"><i class="ti ${p.icon||'ti-target'}"></i>${p.nom}</span>`).join('');
 }
 function projPick(id,ev){if(ev&&ev.cancelable)ev.preventDefault();_projSel=id;_projManuel=true;const b=document.getElementById('projBox');if(b)b.innerHTML=projChipsHTML();}
 function projMaj(nom){if(_projManuel)return;_projSel=projSuggere(nom);const b=document.getElementById('projBox');if(b)b.innerHTML=projChipsHTML();}
-function projAppliquer(obj){if(_projSel&&projetsDepense().some(p=>p.id===_projSel))obj.projet=_projSel;else delete obj.projet;}
+function projCat(cat){ // la catégorie change dans le formulaire
+  _projCat=cat;
+  if(_projSel&&!projListe().some(p=>p.id===_projSel)){_projSel=null;_projManuel=false;}
+  const f=document.getElementById('fn')||document.getElementById('rpNom');
+  if(!_projManuel)_projSel=projSuggere(f?f.value:'');
+  const w=document.getElementById('projW'),b=document.getElementById('projBox');
+  if(b)b.innerHTML=projChipsHTML();if(w)w.style.display=projListe().length?'':'none';
+}
+function projAppliquer(obj){if(_projSel&&projListe().some(p=>p.id===_projSel))obj.projet=_projSel;else delete obj.projet;}
 function projTag(it){
   if(!it.projet)return'';const p=(D.projets||[]).find(x=>x.id===it.projet);if(!p)return'';
-  return`<div><span class="ptag"><i class="ti ti-target"></i>${p.nom}</span></div>`;
+  return p.type==='epargne'
+    ?`<div><span class="ptag" style="background:rgba(29,158,117,.16);color:#1D9E75"><i class="ti ti-target"></i>${p.nom}</span></div>`
+    :`<div><span class="ptag"><i class="ti ti-target"></i>${p.nom}</span></div>`;
 }
 
 // ---- Plaisirs par étiquette (bilan) ----
@@ -3972,7 +4020,7 @@ function openRapide(){
     <div id="rpSugBox"></div>
     <div id="rpCoInfo"></div>
     ${etqBlocForm(true)}
-    ${projBlocForm(true)}
+    ${projBlocForm('plaisirs')}
     <div class="rp-ctx">${J}/${M}/${Y} · ${cpt} · Débité
       <br><span style="opacity:.75">Pour une ligne planifiée ou un autre compte, utilise le formulaire complet.</span></div>
     <button type="button" class="sbtn" onpointerdown="svRapide(event)">Ajouter</button>`,null);
@@ -3983,7 +4031,7 @@ function rpCat(k,ev){
   _rpCat=k;
   document.querySelectorAll('#rpCats .chip').forEach(e=>e.classList.toggle('on',e.dataset.cat===k));
   const w=document.getElementById('etqW');if(w)w.style.display=k==='plaisirs'?'':'none';
-  const pjw=document.getElementById('projW');if(pjw)pjw.style.display=k==='plaisirs'?'':'none';
+  projCat(k);
   const nw=document.getElementById('rpNomW');if(nw)nw.style.display=k==='courses'?'none':'';
   rpCoursesInfo();rpSug((document.getElementById('rpNom')||{}).value||'');
 }
@@ -4007,6 +4055,7 @@ function svRapide(ev){
   }
   const ln={id:nid(),nom,montant:mt,compte:compteFrequent(),date:todayISO(),statut:'Débité'};
   if(_rpCat==='plaisirs'){etqAppliquer(ln,null);projAppliquer(ln);}
+  if(_rpCat==='epargne')projAppliquer(ln);
   b[_rpCat].push(ln);
   try{goc().add(_rpCat);}catch(e){}
   sv();closeOv();render();
@@ -5568,7 +5617,7 @@ function closeOv(e){if(!e||e.target===document.getElementById('ov')){document.ge
 function execDel(){if(dc)dc();closeOv();}
 function selChip(el){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');
   if(el.dataset.cat){const w=document.getElementById('etqW');if(w)w.style.display=el.dataset.cat==='plaisirs'?'':'none';
-    const pjw=document.getElementById('projW');if(pjw)pjw.style.display=el.dataset.cat==='plaisirs'?'':'none';
+    projCat(el.dataset.cat);
     const r=document.getElementById('retW');if(r)r.style.display=el.dataset.cat==='revenus'?'':'none';
     const pw=document.getElementById('ponW');if(pw)pw.style.display=(el.dataset.cat==='charges'||el.dataset.cat==='abonnements')?'':'none';}}
 
@@ -5586,7 +5635,7 @@ function bForm(item,section){
   return`<div class="fg"><label class="fl">Catégorie</label><div class="chips">${cChips}</div></div>
     <div class="fg"><label class="fl">Libellé</label><input class="fi" id="fn" value="${item?item.nom:''}" placeholder="Ex: Dépense" oninput="etqMaj(this.value);projMaj(this.value)"></div>
     ${etqBlocForm(section==='plaisirs')}
-    ${projBlocForm(section==='plaisirs')}
+    ${projBlocForm(section)}
     <div class="fg" id="ponW" style="${section==='charges'||section==='abonnements'?'':'display:none'}"><div class="toggle-row" style="margin:0">
       <div><div class="toggle-lbl">Ne pas reporter le mois suivant</div><div class="toggle-sub">Dépense ponctuelle : elle ne sera pas recopiée à la création du mois suivant</div></div>
       <label class="toggle"><input type="checkbox" id="fPon" ${item&&item.ponctuel?'checked':''}><span class="tslider"></span></label></div></div>
@@ -5613,12 +5662,14 @@ function svB(){
   const obj={id:nid(),nom,montant,compte};if(date)obj.date=date;if(statut)obj.statut=statut;
   const anc=eid!==null?(b[es]||[]).find(x=>x.id===eid):null;
   if(cat==='plaisirs'){etqAppliquer(obj,anc);projAppliquer(obj);}
+  if(cat==='epargne')projAppliquer(obj);
   const fr=document.getElementById('fRet');if(cat==='revenus'&&fr)obj.retrait=!!fr.checked;
   const fp=document.getElementById('fPon');if((cat==='charges'||cat==='abonnements')&&fp&&fp.checked)obj.ponctuel=true;
   if(es!==cat&&eid!==null){b[es]=b[es].filter(x=>x.id!==eid);b[cat].push(obj);}
   else if(eid!==null){const a=b[es],i=a.findIndex(x=>x.id===eid);if(i>=0){a[i]={...a[i],nom,montant,date,compte,statut};
     if(cat==='plaisirs'){if(obj.tags)a[i].tags=obj.tags;else delete a[i].tags;
       if(obj.projet)a[i].projet=obj.projet;else delete a[i].projet;}
+    if(cat==='epargne'){if(obj.projet)a[i].projet=obj.projet;else delete a[i].projet;}
     if(cat==='revenus'&&obj.retrait!==undefined)a[i].retrait=obj.retrait;
     if(cat==='charges'||cat==='abonnements'){if(obj.ponctuel)a[i].ponctuel=true;else delete a[i].ponctuel;}}}
   else{b[cat].push(obj);goc().add(cat);}
@@ -5704,7 +5755,7 @@ function alerteAvantEcrasement(){
     <div>Ton dernier export date de <b>${j} jours</b>. Exporte avant, par précaution.</div></div>`;
   return'';
 }
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}allerPatOuverture();appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();lienEpargneProjets();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}allerPatOuverture();appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
 // Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
