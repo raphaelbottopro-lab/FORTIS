@@ -1038,33 +1038,16 @@ function ld(){
       if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};
       if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};
       migrerDates();
-      assurerEtiquettes();assurerComptes();assurerProjets();
+      assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();
       appliquerTheme();
       const b=buildSnaps();
       Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});
-      // Mettre à jour editingMonth vers le dernier mois non snapshot
-      // (le mois en cours de saisie = le plus récent sans snapshot figé)
-      const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
-      const allPM=new Set([...snapKeys,...Object.keys(D.patrimoine.drafts||{})]);
-      if(D.patrimoine.editingMonth)allPM.add(D.patrimoine.editingMonth);
-      const sorted=[...allPM].sort();
-      // editingMonth = dernier mois pas encore dans snapshots
-      const nonSnap=sorted.filter(k=>!D.patrimoine.snapshots[k]);
-      if(nonSnap.length>0){
-        D.patrimoine.editingMonth=nonSnap[nonSnap.length-1];
-      } else if(sorted.length>0){
-        // Tous figés : editingMonth = mois suivant le dernier
-        const last=sorted[sorted.length-1];
-        const[ly,lm]=last.split('-');
-        let nm=parseInt(lm)+1,ny=parseInt(ly);
-        if(nm>12){nm=1;ny++;}
-        D.patrimoine.editingMonth=ny+'-'+(nm<10?'0':'')+nm;
-      }
+      reparerPatrimoine();
       sv();
     }
   }catch(e){}
 }
-ld();assurerEtiquettes();assurerComptes();assurerProjets();
+ld();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();
 
 function gcb(){const k=bk(cm,cy);return D.budgets[k]||null;}
 function getBMs(){return Object.keys(D.budgets).sort();}
@@ -1586,9 +1569,37 @@ function svSnap(){
     let nm=parseInt(m)+1,ny=parseInt(y);
     if(nm>12){nm=1;ny++;}
     D.patrimoine.editingMonth=ny+'-'+(nm<10?'0':'')+nm;
-    D.patrimoine.current=JSON.parse(JSON.stringify(d));
+    const dr=D.patrimoine.drafts[D.patrimoine.editingMonth];
+    if(dr){D.patrimoine.current=dr;delete D.patrimoine.drafts[D.patrimoine.editingMonth];}
+    else{D.patrimoine.current=JSON.parse(JSON.stringify(d));delete D.patrimoine.current._pea;delete D.patrimoine.current._capture;}
   }
   sv();renderP();
+}
+// ---- Cohérence du patrimoine (mois en cours, brouillons) ----
+function moisPrecCle(k){let[y,m]=k.split('-').map(Number);m--;if(m<1){m=12;y--;}return y+'-'+String(m).padStart(2,'0');}
+function reparerPatrimoine(){
+  const P=D.patrimoine;if(!P||!P.snapshots)return;
+  if(!P.drafts)P.drafts={};
+  const ks=Object.keys(P.snapshots).sort(),last=ks[ks.length-1];
+  // Le mois en cours ne change que quand on le fige : on ne le recalcule que s'il manque ou s'il est figé
+  if((!P.editingMonth||P.snapshots[P.editingMonth])&&last)P.editingMonth=moisSuivantCle(last);
+  const em=P.editingMonth;
+  // Un brouillon posé sur le mois en cours : soit un mois a été « sauté » (on le rétablit), soit on fusionne
+  if(em&&P.drafts[em]){
+    const pv=moisPrecCle(em);
+    if(!P.snapshots[pv]&&!P.drafts[pv]&&last&&last<pv)P.editingMonth=pv;
+    else{P.current=P.drafts[em];delete P.drafts[em];}
+  }
+  // Un même livret sous deux noms : LDD → LDDS (une seule fois)
+  if(!D._renLDDS&&P.current){
+    const a=P.current.epargne||[];
+    if(a.some(x=>x.nom==='LDDS')&&!a.some(x=>x.nom==='LDD')){
+      const ren=d=>{if(d&&Array.isArray(d.epargne))d.epargne.forEach(x=>{if(x.nom==='LDD')x.nom='LDDS';});};
+      Object.values(P.snapshots).forEach(ren);Object.values(P.drafts).forEach(ren);
+      (D.projets||[]).forEach(p=>{if(p.compte==='LDD')p.compte='LDDS';});
+    }
+    D._renLDDS=1;
+  }
 }
 // ---- Défiger le dernier mois figé ----
 function moisSuivantCle(k){let[y,m]=k.split('-').map(Number);m++;if(m>12){m=1;y++;}return y+'-'+String(m).padStart(2,'0');}
@@ -1604,7 +1615,7 @@ function defigerConfirm(){
   const suiv=MN[parseInt(moisSuivantCle(k).slice(5))-1].toLowerCase(),mo=MN[pm].toLowerCase();
   openOv('Défiger '+mo,`<div style="font-size:13px;color:var(--tx1);line-height:1.55;margin-bottom:12px">
     ${MN[pm]} redevient le mois en cours de saisie, avec <b>toutes ses valeurs</b>. Tu pourras le corriger puis le figer à nouveau.</div>
-    ${modif?`<div style="font-size:12px;color:#E0A32E;line-height:1.5;margin-bottom:12px"><i class="ti ti-alert-triangle"></i> Tu as modifié des montants depuis le figement (saisie de ${suiv}). Ils seront remplacés par les valeurs figées de ${mo}.</div>`:''}
+    ${modif?`<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:12px">Tes montants de ${suiv} sont gardés en brouillon.</div>`:''}
     <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">Une sauvegarde est créée juste avant.</div>
     <button type="button" class="sbtn" onclick="defigerGo()">Défiger ${mo}</button>`,null);
 }
@@ -1613,11 +1624,15 @@ function defigerGo(){
   bkpCreer('avant défigement '+MS[pm]);
   const d=JSON.parse(JSON.stringify(D.patrimoine.snapshots[k]));
   delete d._pea;delete d._capture;
+  const S0=D.patrimoine.snapshots[k],C=D.patrimoine.current||{};
+  if(['comptes','epargne','immobilier','passifs'].some(x=>JSON.stringify(S0[x]||[])!==JSON.stringify(C[x]||[])))
+    D.patrimoine.drafts[moisSuivantCle(k)]=JSON.parse(JSON.stringify(C));
   delete D.patrimoine.snapshots[k];delete D.patrimoine.drafts[k];
   D.patrimoine.current=d;D.patrimoine.editingMonth=k;
   sv();closeOv();renderP();
 }
 function createDraft(){
+  if(D.patrimoine.editingMonth&&sk(pm,py)>D.patrimoine.editingMonth)return;
   const k=sk(pm,py),ks=Object.keys(D.patrimoine.snapshots).sort();
   const base=ks.length>0?JSON.parse(JSON.stringify(D.patrimoine.snapshots[ks[ks.length-1]])):JSON.parse(JSON.stringify(D.patrimoine.current));
   D.patrimoine.drafts[k]=base;sv();renderP();
@@ -1633,7 +1648,10 @@ function renderP(){
     document.getElementById('psub').textContent='Aucune donnée';
     document.getElementById('peb').innerHTML='';
     ['pcpt','pepa','pimm','ppas'].forEach(id=>document.getElementById(id).textContent='—');
-    document.getElementById('snap-zone').innerHTML=`<button class="snap-btn" style="background:#185FA5" onclick="createDraft()"><i class="ti ti-plus"></i> Créer le patrimoine de ${MN[pm]} ${py}</button>`;
+    const em=D.patrimoine.editingMonth,emL=em?MN[parseInt(em.slice(5))-1].toLowerCase()+' '+em.slice(0,4):'';
+    document.getElementById('snap-zone').innerHTML=em&&sk(pm,py)>em
+      ?`<div class="snap-saved" style="background:var(--bg2);color:var(--tx2)"><i class="ti ti-lock"></i> Fige d'abord ${emL} pour saisir ce mois</div>`
+      :`<button class="snap-btn" style="background:#185FA5" onclick="createDraft()"><i class="ti ti-plus"></i> Créer le patrimoine de ${MN[pm]} ${py}</button>`;
     document.getElementById('psecs').innerHTML='';
     renderMoyenne();renderPatrimChart(null);renderSpark();return;
   }
@@ -5686,7 +5704,7 @@ function alerteAvantEcrasement(){
     <div>Ton dernier export date de <b>${j} jours</b>. Exporte avant, par précaution.</div></div>`;
   return'';
 }
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEtiquettes();assurerComptes();assurerProjets();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}allerPatOuverture();appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);if(!D.bricks||!Array.isArray(D.bricks.mouvements))D.bricks={mouvements:[]};if(!D.pea||!Array.isArray(D.pea.positions))D.pea={positions:[],liquidites:0,dividendes:[]};if(typeof D.objectifEpargne!=='number')D.objectifEpargne=200;if(!Array.isArray(D.retraitsExcept))D.retraitsExcept=[];if(!D.checklist||typeof D.checklist!=='object')D.checklist={};if(typeof D.objectifPatrimoine!=='number')D.objectifPatrimoine=0;if(!Array.isArray(D.objectifs)||!D.objectifs.length){const ks=Object.keys(D.patrimoine&&D.patrimoine.snapshots||{}).sort();D.objectifs=[{from:ks.length?ks[0]:'2025-01',montant:D.objectifEpargne||0}];}migrerDates();assurerEtiquettes();assurerComptes();assurerProjets();reparerPatrimoine();assurerEpingle();if(D.epingle){const[y2,m2]=D.epingle.split('-');cm=parseInt(m2)-1;cy=parseInt(y2);}allerPatOuverture();appliquerTheme();sv();bkpCreer('après import');render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
 // Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
