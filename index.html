@@ -289,7 +289,7 @@ input:checked+.tslider:before{transform:translateX(20px)}
 .stackbar i,.hb-seg{cursor:pointer}
 #peaArc path,#pdonut path{cursor:pointer;transition:opacity .15s}
 
-.zbwrap{position:relative;height:92px;display:flex;gap:5px;align-items:center;margin:8px 0 5px;touch-action:pan-y}
+.zbwrap{position:relative;height:150px;display:flex;gap:5px;align-items:center;margin:8px 0 5px;touch-action:pan-y}
 .zbc{flex:1;height:100%;position:relative;cursor:pointer}
 .zbc i{position:absolute;left:0;right:0;border-radius:3px;transition:opacity .15s}
 .zline{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--bd2);pointer-events:none}
@@ -638,7 +638,12 @@ html[data-theme="light"] .rth button{color:#5B4BD6}
 .dlg .r .n{flex:1;min-width:0;font-size:14px;color:var(--tx1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dlg .r small{display:block;font-size:11px;color:var(--tx2)}
 .zbc i{left:20%!important;right:20%!important}
-.zbc i.ex{background:var(--bd2)!important}
+.zbc i.ok{background:#22C55E}
+.zbc i.sous{background:rgba(34,197,94,.16);box-shadow:inset 0 0 0 1.5px #22C55E}
+.zbc i.ng{background:#FB7185}
+.zbc i.nul{background:var(--bd2)}
+.zbc i.ex{background:var(--bd2)}
+html[data-theme="light"] .zbc i.ex{background:#cfd1d9}
 .zob{position:absolute;left:-3px;right:-3px;height:0;border-top:1.5px dashed var(--tx2);pointer-events:none;opacity:.85}
 .zol{position:absolute;left:0;font-size:11px;color:var(--tx2);font-weight:600;transform:translateY(-120%);white-space:nowrap;pointer-events:none}
 .bi-col .tx{position:absolute;left:-6px;right:-6px;text-align:center;font-size:11px;font-weight:600;color:var(--tx1);pointer-events:none}
@@ -2112,6 +2117,9 @@ function setSparkChip(k,v){
 }
 
 let _spark=null,_spPer='12';
+// Un toucher hors du double anneau revient au total
+document.addEventListener('click',e=>{const ch=_charts.patrim;if(!ch||ch.sel===null)return;
+  const z=document.getElementById('pdonut');if(z&&z.contains(e.target))return;ch.sel=null;chartPaint('patrim');});
 function spPer(k){_spPer=k;renderSpark();}
 function pasRond(x){const p=Math.pow(10,Math.floor(Math.log10(x))),f=x/p;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;}
 function sparkMarques(vals,pts,W,H){
@@ -2192,11 +2200,13 @@ function renderPatrimChart(snap){
     return`M${a},${b}A${r1},${r1} 0 ${lg} 1 ${c},${d}L${e2},${f}A${r0},${r0} 0 ${lg} 0 ${g},${h}Z`;};
   let svg='',k0=0;
   grps.forEach(g=>{const a0=ang[k0][0];k0+=g.its.length;const a1=ang[k0-1][1];svg+=`<path d="${arc(40,49,a0,a1)}" fill="${g.c}" opacity=".5" style="pointer-events:none"/>`;});
-  ord.forEach((it,i)=>{svg+=`<path d="${arc(52,66,ang[i][0],ang[i][1])}" fill="${it.c}" data-ck="patrim" data-ci="${i}" onpointerdown="chartPick('patrim',${i},event)"/>`;});
+  ord.forEach((it,i)=>{svg+=`<path d="${arc(52,66,ang[i][0],ang[i][1])}" fill="${it.c}" data-ck="patrim" data-ci="${i}" style="pointer-events:none"/>`;});
+  // Zones de toucher larges (les deux anneaux + la marge), invisibles
+  ord.forEach((it,i)=>{svg+=`<path d="${arc(34,70,ang[i][0]-gap/2,ang[i][1]+gap/2)}" fill="transparent" onclick="chartPick('patrim',${i},event)"/>`;});
   const ctr=(a,b,big)=>`<text x="70" y="${b?72:75}" text-anchor="middle" font-size="${big?16:15}" font-weight="600" fill="var(--tx1)">${a}</text>${b?`<text x="70" y="87" text-anchor="middle" font-size="9.5" fill="var(--tx2)">${b}</text>`:''}`;
   const pc=v=>{const p=v/tot*100;return p>0&&p<1?p.toFixed(1).replace('.',',')+' %':Math.round(p)+' %';};
   const legH=grps.map(g=>`<div class="gh"><span>${g.n}</span><b>${pc(g.v)}</b></div>`+g.its.map(it=>{const i=ord.indexOf(it);
-    return`<div class="r" data-ck="patrim" data-ci="${i}" onpointerdown="chartPick('patrim',${i},event)"><span class="dt" style="background:${it.c}"></span><span class="n">${it.nm}<small>${fmk(it.v)} · ${pc(it.v)}</small></span></div>`;}).join('')).join('');
+    return`<div class="r" data-ck="patrim" data-ci="${i}" onclick="chartPick('patrim',${i},event)"><span class="dt" style="background:${it.c}"></span><span class="n">${it.nm}<small>${fmk(it.v)} · ${pc(it.v)}</small></span></div>`;}).join('')).join('');
   wrap.innerHTML=`<div class="dbl"><svg viewBox="0 0 140 140" role="img" aria-label="Répartition de l'épargne">${svg}<g id="pdctr">${ctr(fmk(tot),'total')}</g></svg><div class="dlg">${legH}</div></div>`;
   chartReg('patrim',ord.map(x=>({n:x.nm,v:x.v,c:x.c})),tot,'pInfo',sel=>{const z=document.getElementById('pdctr');if(!z)return;
     z.innerHTML=sel===null||!ord[sel]?ctr(fmk(tot),'total'):ctr(fmk(ord[sel].v),ord[sel].nm.length>14?ord[sel].nm.slice(0,13)+'…':ord[sel].nm);});
@@ -2314,20 +2324,22 @@ function renderMoyenne(){
   const atteints=L.filter(x=>x.obj>0&&x.d>=x.obj).length;
   _epData={L,solde,year};
   const fD=n=>(n>=0?'+':'−')+Math.abs(Math.round(n)).toLocaleString('fr-FR')+' €';
-  const mx=Math.max(...L.map(x=>Math.abs(x.d)),...L.map(x=>x.obj||0),1);
+  // Zéro placé selon les montants : plus de place pour les bons mois
+  const pMx=Math.max(...L.map(x=>Math.max(0,x.d)),...L.map(x=>x.obj||0),1);
+  const nMx=Math.max(...L.map(x=>Math.max(0,-x.d)),0);
+  const zt=nMx>0?Math.min(.8,Math.max(.6,pMx/(pMx+nMx))):.94;      // part de hauteur au-dessus de zéro
+  const zB=(1-zt)*100,hP=zt*100-12,hN=(1-zt)*100-3;
+  const yP=v=>(zB+v/pMx*hP).toFixed(2);
 
   const bars=L.map((x,i)=>{
-    const h=Math.max(3,Math.abs(x.d)/mx*44);
-    let fond;
-    if(x.d===0)fond='var(--bd2)';
-    else if(x.d>0)fond=(x.obj>0&&x.d>=x.obj)?'#22C55E':'rgba(34,197,94,.42)';
-    else fond='#FB7185';
-    const style=`background:${fond}`;
+    const h=x.d>=0?Math.max(2,x.d/pMx*hP):Math.max(2,-x.d/nMx*hN);
+    const atteint=x.obj>0&&x.d>=x.obj;
+    let cls=x.ex?'ex':x.d<0?'ng':x.d===0?'nul':atteint?'ok':'sous';
     const op=(_epSel!==null&&_epSel!==i)?'.3':'1';
-    const ob=x.obj>0?`<span class="zob" style="bottom:${(50+x.obj/mx*44).toFixed(2)}%"></span>${(i===0||L[i-1].obj!==x.obj)?`<span class="zol" style="bottom:${(50+x.obj/mx*44).toFixed(2)}%">${fmk(x.obj)}</span>`:''}`:'';
-    return`<div class="zbc" onpointerdown="epPick(${i},event)">
-      ${x.d>=0?`<i class="${x.ex?'ex':''}" style="bottom:50%;height:${h}%;${style};opacity:${op}"></i>`
-              :`<i class="${x.ex?'ex':''}" style="top:50%;height:${h}%;${style};opacity:${op}"></i>`}${ob}</div>`;
+    const ob=x.obj>0?`<span class="zob" style="bottom:${yP(x.obj)}%"></span>${(i===0||L[i-1].obj!==x.obj)?`<span class="zol" style="bottom:${yP(x.obj)}%">${fmk(x.obj)}</span>`:''}`:'';
+    return`<div class="zbc" onclick="epPick(${i},event)">
+      ${x.d>=0?`<i class="${cls}" style="bottom:${zB.toFixed(2)}%;height:${h}%;opacity:${op}"></i>`
+              :`<i class="${cls}" style="top:${(100-zB).toFixed(2)}%;height:${h}%;opacity:${op}"></i>`}${ob}</div>`;
   }).join('');
 
   let act;
@@ -2353,9 +2365,9 @@ function renderMoyenne(){
       ${nbEx?`<span>Hors retraits <b style="color:${moyH>=0?'var(--pos)':'var(--neg)'}">${fD(moyH)}</b>/mois</span>`:''}
     </div>
     ${avecObj?`<div style="font-size:11px;color:var(--tx2);margin-top:5px"><b style="color:var(--tx1)">${atteints} mois sur ${avecObj}</b> ont atteint leur objectif</div>`:''}
-    <div class="zbwrap"><div class="zline"></div>${bars}</div>
+    <div class="zbwrap"><div class="zline" style="top:${(100-zB).toFixed(2)}%"></div>${bars}</div>
     <div class="zbx">${L.map(x=>`<span>${L.length>7?x.m[0]:x.m.replace('.','')}</span>`).join('')}</div>
-    <div class="lgmini">${avecObj?'<span><i style="background:#22C55E"></i>objectif atteint</span><span><i style="background:rgba(34,197,94,.42)"></i>en dessous</span>':''}${L.some(x=>x.d<0&&!x.ex)?'<span><i style="background:#FB7185"></i>retrait</span>':''}${nbEx?'<span><i style="background:var(--bd2)"></i>retrait exclu</span>':''}${avecObj?'<span><i style="width:13px;height:0;border-top:1.5px dashed var(--tx2);border-radius:0"></i>objectif</span>':''}</div>
+    <div class="lgmini">${avecObj?'<span><i style="background:#22C55E"></i>objectif atteint</span><span><i style="background:rgba(34,197,94,.16);box-shadow:inset 0 0 0 1.5px #22C55E"></i>en dessous</span>':''}${L.some(x=>x.d<0&&!x.ex)?'<span><i style="background:#FB7185"></i>retrait</span>':''}${nbEx?'<span><i style="background:var(--bd2)"></i>retrait exclu</span>':''}${avecObj?'<span><i style="width:13px;height:0;border-top:1.5px dashed var(--tx2);border-radius:0"></i>objectif</span>':''}</div>
     <div class="ep-act">${act}</div>
     <div class="ep-proj">Au rythme de <b>${fD(base)}</b>/mois, tes livrets atteindront
       <b>${fmk(proj)}</b> fin décembre ${year}.</div>
