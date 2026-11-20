@@ -1664,7 +1664,7 @@ function renderB(){
       <div class="cn"><div class="ct">${cat.label}</div><div class="cs">${etqF?`Filtré · ${its.length} sur ${nbAv}`:`${its.length} ligne${its.length>1?'s':''}`}</div></div>
       <div class="cv${cat.ac==='g'?' g':''}">${cat.ac==='g'?'+':''}${fmk(tot)}</div>
       <i class="ti ti-chevron-down cc${op?' open':''}"></i>
-    </div>${etqBan}${cat.key==='epargne'?pjRappelsEpargne(b,readonly):''}<div class="cb${op?' open':''}">${etqH}`;
+    </div>${etqBan}<div class="cb${op?' open':''}">${etqH}`;
     const rowsH=[];
     its.forEach(item=>{
       const pl=item.statut==='Planifié',stAut=item.statut&&!pl&&item.statut!=='Débité'&&item.statut!=='Fait'?item.statut:'';
