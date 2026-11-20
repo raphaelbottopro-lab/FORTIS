@@ -1663,7 +1663,7 @@ function renderB(){
     html+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('${cat.key}')">
       <div class="ci" style="background:${softGrad(cat.col)};box-shadow:inset 0 0 0 1px ${cat.col}26"><i class="ti ${cat.icon}" style="color:${cat.col}"></i></div>
       <div class="cn"><div class="ct">${cat.label}</div><div class="cs">${etqF?`Filtré · ${its.length} sur ${nbAv}`:`${its.length} ligne${its.length>1?'s':''}`}</div></div>
-      <div class="cv${cat.ac==='g'?' g':''}">${cat.ac==='g'?'+':''}${fmk(tot)}</div>
+      <div class="cv${cat.ac==='g'?' g':''}">${cat.sign}${fmk(tot)}</div>
       <i class="ti ti-chevron-down cc${op?' open':''}"></i>
     </div>${etqBan}<div class="cb${op?' open':''}">${etqH}`;
     const rowsH=[];
@@ -1674,7 +1674,7 @@ function renderB(){
       const dot='';
       const stBtn=(!cat.ns&&pl&&!readonly)?stBouton(cat.key,item):'';
       rowsH.push(`<div class="row${readonly?'':' tap'}" onclick="rowTap('${cat.key}',${item.id},${!!readonly})"${readonly?'':` onpointerdown="lpStart('${cat.key}',${item.id},event)" onpointerup="lpStop()" onpointercancel="lpStop()" onpointermove="lpStop()" oncontextmenu="return false"`}>${stBtn}${ligneIcone(cat,item)}<div class="ri"><div class="rn">${item.nom}</div><div class="rm">${meta}</div>${item.ponctuel?`<div><span class="ptag"><i class="ti ti-pin"></i>ponctuelle</span></div>`:''}${item.exc?`<div><span class="ptag xtag"><i class="ti ti-sparkles"></i>exceptionnelle</span></div>`:''}${cat.key==='epargne'?projTag(item):''}${cat.key==='plaisirs'?projTag(item):cat.key==='revenus'&&item.retrait?`<div><span class="rtag"><i class="ti ti-arrows-exchange"></i>Retrait d'épargne</span></div>`:''}</div>
-        <div class="ra${cat.ac==='g'?' g':''}">${cat.ac==='g'?'+':''}${fmt(item.montant)}</div>
+        <div class="ra${cat.ac==='g'?' g':''}">${cat.sign}${fmt(item.montant)}</div>
       </div>`);
     });
     html+=plGroupe(cat,b,its,rowsH,etqF);
@@ -3572,7 +3572,7 @@ function renderRav(){
   const fin=new Date(cy,cm,s.fin),jf=`jusqu'au ${JOURS_C[fin.getDay()]} ${s.fin}`;
   const pc=s.prevu>0?Math.min(100,s.dep/s.prevu*100):100;
   let note='';
-  if(over&&E.c<3){note=`<div class="rav-n amb">Les ${3-E.c>1?(3-E.c)+' semaines suivantes passent':'semaine suivante passe'} à ≈ ${ravArr(E.S[E.c+1].prevu)}${3-E.c>1?' chacune':''}.</div>`;}
+  if(over&&E.c<3){note=`<div class="rav-n amb">${3-E.c>1?'Les '+(3-E.c)+' semaines suivantes passent':'La semaine suivante passe'} à ≈ ${ravArr(E.S[E.c+1].prevu)}${3-E.c>1?' chacune':''}.</div>`;}
   else if(b._ravNote&&b._ravNote.s===E.c&&Math.abs(b._ravNote.d)>=1){
     const d=b._ravNote.d;
     note=`<div class="rav-n ${d>0?'vert':''}">${d>0?'+':'−'}${ravArr(Math.abs(d))} de revenus : reste à vivre réajusté.</div>`;
