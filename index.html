@@ -645,7 +645,8 @@ html[data-theme="light"] .rth button{color:#5B4BD6}
 .zbc i.ex{background:var(--bd2)}
 html[data-theme="light"] .zbc i.ex{background:#cfd1d9}
 .zob{position:absolute;left:-3px;right:-3px;height:0;border-top:1.5px dashed var(--tx2);pointer-events:none;opacity:.85}
-.zol{position:absolute;left:0;font-size:11px;color:var(--tx2);font-weight:600;transform:translateY(-120%);white-space:nowrap;pointer-events:none}
+.zol{position:absolute;left:-3px;font-size:11px;color:var(--tx2);font-weight:600;transform:translateY(-115%);white-space:nowrap;pointer-events:none;background:var(--bg1);border-radius:4px;padding:0 3px;z-index:2;line-height:1.35}
+.zol.dr{left:auto;right:-3px}
 .bi-col .tx{position:absolute;left:-6px;right:-6px;text-align:center;font-size:11px;font-weight:600;color:var(--tx1);pointer-events:none}
 .bi-col .tx.z{color:var(--tx2);font-weight:400}
 .bi-moy{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--tx2);opacity:.7;pointer-events:none}
@@ -1760,11 +1761,15 @@ function osE(i){
 function svS(i){const b=gcb(),v=document.getElementById('fsr').value;b.courses.semaines[i].reel=v===''?null:parseFloat(v)||0;sv();render();closeOv();}
 function clS(i){const b=gcb();b.courses.semaines[i].reel=null;sv();render();closeOv();}
 
+// Tous les mois connus du patrimoine : figés, mois en cours, brouillons
+function patMois(){const P=D.patrimoine,M=Object.assign({},P.drafts||{});
+  if(P.editingMonth&&P.current&&!P.snapshots[P.editingMonth])M[P.editingMonth]=P.current;
+  return Object.assign(M,P.snapshots||{});}
 function gpd(){const k=sk(pm,py);if(D.patrimoine.snapshots[k])return{data:D.patrimoine.snapshots[k],status:'snapshot'};if(D.patrimoine.drafts[k])return{data:D.patrimoine.drafts[k],status:'draft'};if(k===D.patrimoine.editingMonth)return{data:D.patrimoine.current,status:'current'};return null;}
 function gppd(){
   let p=pm-1,y=py;if(p<0){p=11;y--;}
-  const ks=Object.keys(D.patrimoine.snapshots).sort(),t=sk(p,y),av=ks.filter(k=>k<=t);
-  if(!av.length)return null;return D.patrimoine.snapshots[av[av.length-1]];
+  const M=patMois(),t=sk(p,y),av=Object.keys(M).sort().filter(k=>k<=t);
+  if(!av.length)return null;return M[av[av.length-1]];
 }
 function svSnap(){
   const k=sk(pm,py);
@@ -2009,11 +2014,9 @@ function renderP(){
 
 // ---- Courbe d'évolution du patrimoine (12 derniers mois) ----
 function renderSpark(){
-  const snaps=D.patrimoine.snapshots;
-  const keys=Object.keys(snaps).sort().filter(k=>k<=sk(pm,py));
-  // Mois affiché pas encore figé : il entre dans la courbe, en pointillé
-  const cur=sk(pm,py),gd=gpd(),enCours=!snaps[cur]&&gd&&gd.data&&gd.status!=='snapshot';
-  if(enCours)keys.push(cur);
+  const snaps=D.patrimoine.snapshots,MP=patMois();
+  // Mois non figés (en cours, brouillons) : dans la courbe, en pointillé
+  const cur=sk(pm,py),keys=Object.keys(MP).sort().filter(k=>k<=cur),enCours=!snaps[cur]&&!!MP[cur];
   const nPer=_spPer==='6'?6:_spPer==='all'?9999:12;
   const last=keys.slice(-nPer);
   const wrap=document.getElementById('sparkwrap');
@@ -2026,7 +2029,7 @@ function renderSpark(){
     xEl.innerHTML='';valEl.textContent='—';chipEl.textContent='';chipEl.style.background='transparent';
     _spark=null;return;
   }
-  const vals=last.map(k=>ta(snaps[k]||gd.data));
+  const vals=last.map(k=>ta(MP[k]));
   // Géométrie
   const W=300,H=130,PT=16,PB=16;
   const vmn=Math.min(...vals),vmx=Math.max(...vals);
@@ -2038,9 +2041,9 @@ function renderSpark(){
   const grid=[];for(let g=mn;g<=mx+1e-6;g+=st)grid.push(g);
   const line=pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
   const area=`${line} L${W},${H} L0,${H} Z`;
-  const nPl=enCours?pts.length-1:pts.length;   // partie pleine (mois figés)
+  const f0=last.findIndex(k=>!snaps[k]),nPl=f0<0?pts.length:f0;   // partie pleine (mois figés)
   const lineP=pts.slice(0,nPl).map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-  const lineE=enCours&&pts.length>1?`M${pts[pts.length-2][0].toFixed(1)},${pts[pts.length-2][1].toFixed(1)} L${pts[pts.length-1][0].toFixed(1)},${pts[pts.length-1][1].toFixed(1)}`:'';
+  const lineE=f0>=0&&pts.length>1?pts.slice(Math.max(0,f0-1)).map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '):'';
   wrap.innerHTML=`<div style="position:relative">
     <svg id="sparksvg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;touch-action:pan-y">
       <defs><linearGradient id="sparkgrad" x1="0" y1="0" x2="0" y2="1">
@@ -2064,7 +2067,7 @@ function renderSpark(){
   const marks=[...new Set([0,Math.floor((last.length-1)/3),Math.floor((last.length-1)*2/3),last.length-1])];
   xEl.innerHTML=marks.map(i=>`<span>${labelOf(last[i])}</span>`).join('');
   // État partagé pour l'interaction
-  _spark={keys:last,vals,pts,W,H,enCours:enCours?cur:null};
+  _spark={keys:last,vals,pts,W,H,enCours:enCours?cur:null,nonFig:last.filter(k=>!snaps[k])};
   const svg=document.getElementById('sparksvg');
   const move=e=>{
     const r=svg.getBoundingClientRect();
@@ -2152,7 +2155,7 @@ function selectSparkPoint(i){
   const prev=i>0?vals[i-1]:null;
   let sub='';
   if(prev!==null){const d=v-prev,u=d>=0;sub=`<span style="color:${u?'var(--pos)':'var(--neg)'}"> ${u?'+':'−'}${fmk(Math.abs(d))}</span> vs mois préc.`;}
-  tip.innerHTML=`<strong style="color:var(--tx1)">${MN[parseInt(k.split('-')[1])-1]} ${k.split('-')[0]}${_spark.enCours===k?' · en cours':''}</strong><div style="color:var(--tx2);margin-top:2px"><span style="color:var(--tx1);font-weight:600">${fmk(v)}</span>${sub?' ·'+sub:''}</div>`;
+  tip.innerHTML=`<strong style="color:var(--tx1)">${MN[parseInt(k.split('-')[1])-1]} ${k.split('-')[0]}${_spark.enCours===k?' · en cours':(_spark.nonFig||[]).includes(k)?' · non figé':''}</strong><div style="color:var(--tx2);margin-top:2px"><span style="color:var(--tx1);font-weight:600">${fmk(v)}</span>${sub?' ·'+sub:''}</div>`;
   tip.style.display='block';
   const leftPct=(p[0]/W)*100;
   if(leftPct<34){tip.style.left='0';tip.style.right='auto';tip.style.transform='none';}
@@ -2298,9 +2301,9 @@ function renderMoyenne(){
   const box=document.getElementById('moy-card');
   const snaps=D.patrimoine.snapshots;
   const year=py, curKey=sk(pm,py);
-  const gd=gpd(),dCur=(!snaps[curKey]&&gd&&gd.data&&gd.status!=='snapshot')?gd.data:null;
-  const allKeys=Object.keys(snaps).concat(dCur?[curKey]:[]).sort();
-  const lv=k=>{const s=snaps[k]||(k===curKey?dCur:null);if(!s)return null;
+  const MP=patMois(),dCur=!snaps[curKey]&&MP[curKey]?MP[curKey]:null;
+  const allKeys=Object.keys(MP).sort();
+  const lv=k=>{const s=MP[k];if(!s)return null;
     return(s.epargne||[]).filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);};
   const yKeys=allKeys.filter(k=>k.startsWith(year+'-')&&k<=curKey);
   const L=[];
@@ -2336,7 +2339,7 @@ function renderMoyenne(){
     const atteint=x.obj>0&&x.d>=x.obj;
     let cls=x.ex?'ex':x.d<0?'ng':x.d===0?'nul':atteint?'ok':'sous';
     const op=(_epSel!==null&&_epSel!==i)?'.3':'1';
-    const ob=x.obj>0?`<span class="zob" style="bottom:${yP(x.obj)}%"></span>${(i===0||L[i-1].obj!==x.obj)?`<span class="zol" style="bottom:${yP(x.obj)}%">${fmk(x.obj)}</span>`:''}`:'';
+    const ob=x.obj>0?`<span class="zob" style="bottom:${yP(x.obj)}%"></span>${(i===0||L[i-1].obj!==x.obj)?`<span class="zol${i>=L.length-2?' dr':''}" style="bottom:${yP(x.obj)}%">${fmk(x.obj)}</span>`:''}`:'';
     return`<div class="zbc" onclick="epPick(${i},event)">
       ${x.d>=0?`<i class="${cls}" style="bottom:${zB.toFixed(2)}%;height:${h}%;opacity:${op}"></i>`
               :`<i class="${cls}" style="top:${(100-zB).toFixed(2)}%;height:${h}%;opacity:${op}"></i>`}${ob}</div>`;
@@ -3856,9 +3859,9 @@ function cptSuppr(i){
 // ============ LOT 4a · MISE À JOUR EXPRESS DU PATRIMOINE ============
 const EXP_SECS=[['epargne','Épargne'],['immobilier','Immobilier'],['passifs','Passifs']];
 function expPrecedent(){
-  const k=sk(pm,py),ks=Object.keys(D.patrimoine.snapshots||{}).filter(x=>x<k).sort();
+  const k=sk(pm,py),M=patMois(),ks=Object.keys(M).filter(x=>x<k).sort();
   if(!ks.length)return null;
-  const pk=ks[ks.length-1];return{k:pk,data:D.patrimoine.snapshots[pk]};
+  const pk=ks[ks.length-1];return{k:pk,data:M[pk]};
 }
 function expNum(v){v=String(v||'').replace(/\s/g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?null:n;}
 function openExpress(){
