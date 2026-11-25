@@ -586,6 +586,26 @@ html[data-theme="light"] .rth button{color:#5B4BD6}
 .etqic span{aspect-ratio:1;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--tx2);cursor:pointer}
 
 /* ===== Design lot A : boutons, bandeaux, flèches ===== */
+/* ===== Formulaire d'ajout ===== */
+.fam{position:relative;background:var(--bg2);border:1.5px solid var(--bd2);border-radius:16px;padding:10px 12px 8px;margin-bottom:12px;text-align:center}
+.fam:focus-within{border-color:var(--acc)}
+.fam input{width:100%;border:none;background:transparent;text-align:center;font-size:34px;font-weight:600;letter-spacing:-.02em;color:var(--tx1);font-family:var(--font);padding:0 22px 0 0;outline:none;font-variant-numeric:proportional-nums;-moz-appearance:textfield}
+.fam input::-webkit-outer-spin-button,.fam input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fam input::placeholder{color:var(--tx2);opacity:.6}
+.fam .eu{position:absolute;right:16px;top:14px;font-size:24px;color:var(--tx2);pointer-events:none}
+.fam .ct{font-size:12px;color:var(--tx2);margin-top:1px}
+.fr3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;margin-bottom:13px}
+.fr3.c2{grid-template-columns:1fr 1fr}.fr3.c1{grid-template-columns:1fr}
+.fr3>div{background:var(--bg2);border:.5px solid var(--bd2);border-radius:12px;padding:6px 8px 4px;min-width:0}
+.fr3 small{display:block;font-size:11px;color:var(--tx2)}
+.fr3 input,.fr3 select{width:100%;border:none;background:transparent;color:var(--tx1);font-size:16px;font-family:var(--font);padding:2px 0;-webkit-appearance:none;appearance:none;min-width:0;text-align:left}
+.fr3 input::-webkit-date-and-time-value{text-align:left}
+.fopt{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-top:.5px solid var(--bd1);margin:2px 0 6px;cursor:pointer}
+.fopt b{font-size:14px;font-weight:500;color:var(--tx1);display:block}
+.fopt span{font-size:12px;color:var(--tx2)}
+.fopt i{color:var(--tx2);font-size:16px;transition:transform .2s}
+.fopt.on i{transform:rotate(180deg)}
+
 /* ===== Design lot D ===== */
 .pq{margin-bottom:11px;cursor:pointer;transition:opacity .15s}
 .pq:last-child{margin-bottom:2px}
@@ -5887,11 +5907,20 @@ function etqInit(item,compact){
 function etqPickerHTML(){
   const P=_etqP;if(!P)return'';
   const act=id=>P.compact?`onpointerdown="etqTog('${id}',event)"`:`onclick="etqTog('${id}',event)"`;
+  if(P.top){
+    const U=etqUsages(),ord=[...D.etiquettes].sort((a,b)=>(U[b.id]||0)-(U[a.id]||0));
+    const top=new Set(ord.slice(0,6).map(e=>e.id));P.sel.forEach(id=>top.add(id));P.sug.forEach(id=>top.add(id));
+    const vis=P.open?ord:ord.filter(e=>top.has(e.id)),nAutres=ord.length-vis.length;
+    let h=vis.map(e=>etqChip(e,P.sel.has(e.id),P.sug.includes(e.id),act(e.id))).join('');
+    if(P.open||nAutres>0)h+=`<span class="etq" style="border-style:dashed" onclick="etqOuvrir(event)"><i class="ti ${P.open?'ti-chevron-up':'ti-plus'}"></i>${P.open?'Moins':nAutres+' autre'+(nAutres>1?'s':'')}</span>`;
+    return h;
+  }
   const liste=P.open?D.etiquettes:D.etiquettes.filter(e=>P.sel.has(e.id)||P.sug.includes(e.id));
   let h=liste.map(e=>etqChip(e,P.sel.has(e.id),P.sug.includes(e.id),act(e.id))).join('');
   if(P.compact)h+=`<span class="etq" onpointerdown="etqOuvrir(event)"><i class="ti ${P.open?'ti-chevron-up':'ti-plus'}"></i>${P.open?'Moins':'Toutes'}</span>`;
   return h;
 }
+function etqUsages(){const U={};Object.values(D.budgets||{}).forEach(b=>((b&&b.plaisirs)||[]).forEach(x=>(x.tags||[]).forEach(id=>{U[id]=(U[id]||0)+1;})));return U;}
 function etqRendre(){const b=document.getElementById('etqBox');if(b)b.innerHTML=etqPickerHTML();}
 function etqTog(id,ev){
   if(ev&&ev.cancelable&&_etqP&&_etqP.compact)ev.preventDefault();
@@ -6106,7 +6135,7 @@ function openOv(title,body,delCb){
 function closeOv(e){if(!e||e.target===document.getElementById('ov')){document.getElementById('ov').classList.remove('on');dc=null;}}
 function execDel(){if(dc)dc();closeOv();}
 function selChip(el){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');
-  if(el.dataset.cat){const w=document.getElementById('etqW');if(w)w.style.display=el.dataset.cat==='plaisirs'?'':'none';
+  if(el.dataset.cat){{const fc=document.getElementById('famCat'),cc=CATS.find(c=>c.key===el.dataset.cat);if(fc&&cc)fc.textContent=cc.label;}const w=document.getElementById('etqW');if(w)w.style.display=el.dataset.cat==='plaisirs'?'':'none';
     projCat(el.dataset.cat);
     const r=document.getElementById('retW');if(r)r.style.display=el.dataset.cat==='revenus'?'':'none';
     const pw=document.getElementById('ponW');if(pw)pw.style.display=(el.dataset.cat==='charges'||el.dataset.cat==='abonnements')?'':'none';
@@ -6118,14 +6147,21 @@ function bForm(item,section){
   const cats={revenus:'Revenu',charges:'Charge fixe',abonnements:'Abonnement',epargne:'Épargne',plaisirs:'Plaisirs & Autres'};
   const cOpts=cpts.map(c=>`<option ${item&&item.compte===c?'selected':''}>${c}</option>`).join('');
   const cChips=Object.entries(cats).map(([k,v])=>`<div class="chip${section===k?' on':''}" onclick="selChip(this)" data-cat="${k}">${v}</div>`).join('');
-  const df=cat.nd?'':
-    `<div class="fg"><label class="fl">Date</label><input class="fi" id="fd" type="date" value="${item&&item.date?(isISO(item.date)?item.date:toISO(item.date,bk(cm,cy))):todayISO()}"></div>`;
-  const sf=cat.ns?'':
-    `<div class="fg"><label class="fl">Statut</label><select class="fs" id="fst">${sts.map(s=>`<option ${item&&item.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
-  etqInit(item,false);projInit(item);
-  return`<div class="fg"><label class="fl">Catégorie</label><div class="chips">${cChips}</div></div>
-    <div class="fg"><label class="fl">Libellé</label><input class="fi" id="fn" value="${item?item.nom:''}" placeholder="Ex: Dépense" oninput="etqMaj(this.value);projMaj(this.value)"></div>
-    ${etqBlocForm(section==='plaisirs')}
+  const cel=[];
+  if(!cat.nd)cel.push(`<div><small>Date</small><input id="fd" type="date" value="${item&&item.date?(isISO(item.date)?item.date:toISO(item.date,bk(cm,cy))):todayISO()}"></div>`);
+  cel.push(`<div><small>Compte</small><select id="fc">${cOpts}</select></div>`);
+  if(!cat.ns)cel.push(`<div><small>Statut</small><select id="fst">${sts.map(s=>`<option ${item&&item.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>`);
+  etqInit(item,false);if(_etqP){_etqP.top=true;_etqP.open=false;}
+  projInit(item);
+  const optOuv=!!(item&&(item.projet||item.exc||item.ponctuel||item.retrait));
+  const optTxt=['catégorie',section==='plaisirs'||section==='epargne'?'projet':'',section==='plaisirs'||section==='charges'?'exceptionnelle':'',section==='charges'||section==='abonnements'?'ponctuelle':'',section==='revenus'?'retrait d\'épargne':''].filter(Boolean).join(', ');
+  return`<div class="fam"><input id="fm" type="number" step="0.01" inputmode="decimal" value="${item?item.montant:''}" placeholder="0,00"><span class="eu">€</span><div class="ct" id="famCat">${cat.label||''}</div></div>
+    <div class="fg"><input class="fi" id="fn" value="${item?item.nom:''}" placeholder="Libellé (ex : Krousty)" oninput="etqMaj(this.value);projMaj(this.value)"></div>
+    <div class="fr3${cel.length===2?' c2':cel.length===1?' c1':''}">${cel.join('')}</div>
+    ${etqBlocForm(section==='plaisirs').replace('>Étiquettes<','>Étiquette<')}
+    <div class="fopt${optOuv?' on':''}" onclick="fOptTog(this)"><div><b>Plus d'options</b><span>${optTxt.charAt(0).toUpperCase()+optTxt.slice(1)}</span></div><i class="ti ti-chevron-down"></i></div>
+    <div id="fOpts" style="${optOuv?'':'display:none'}">
+    <div class="fg"><label class="fl">Catégorie</label><div class="chips">${cChips}</div></div>
     ${projBlocForm(section)}
     <div class="fg" id="ponW" style="${section==='charges'||section==='abonnements'?'':'display:none'}"><div class="toggle-row" style="margin:0">
       <div><div class="toggle-lbl">Ne pas reporter le mois suivant</div><div class="toggle-sub">Dépense ponctuelle : elle ne sera pas recopiée à la création du mois suivant</div></div>
@@ -6136,14 +6172,20 @@ function bForm(item,section){
     <div class="fg" id="retW" style="${section==='revenus'?'':'display:none'}"><div class="toggle-row" style="margin:0">
       <div><div class="toggle-lbl">Retrait d'épargne</div><div class="toggle-sub">Argent repris sur ton épargne : exclu des revenus du taux d'épargne</div></div>
       <label class="toggle"><input type="checkbox" id="fRet" ${item&&item.retrait?'checked':''}><span class="tslider"></span></label></div></div>
-    <div class="fg"><label class="fl">Montant (€)</label><input class="fi" id="fm" type="number" step="0.01" value="${item?item.montant:''}" placeholder="0.00" inputmode="decimal"></div>
-    ${df}<div class="fg"><label class="fl">Compte</label><select class="fs" id="fc">${cOpts}</select></div>${sf}
+    </div>
     <button class="sbtn" onclick="svB()">Enregistrer</button>`;
 }
-function oA(section){dismissBanner();eid=null;es=section;openOv('Nouvelle opération',bForm(null,section),null);}
+function fOptTog(el){const o=document.getElementById('fOpts');if(!o)return;const on=o.style.display==='none';o.style.display=on?'':'none';el.classList.toggle('on',on);}
+// Ouvre le formulaire en haut, et le clavier sur le montant pour un ajout
+function fFocusMontant(ajout){
+  const sh=document.querySelector('#ov .sh');if(sh)sh.scrollTop=0;
+  if(ajout){const m=document.getElementById('fm');if(m){try{m.focus({preventScroll:true});}catch(e){m.focus();}}}
+}
+function oA(section){dismissBanner();eid=null;es=section;openOv('Nouvelle opération',bForm(null,section),null);fFocusMontant(true);}
 function oE(section,id){
   dismissBanner();const b=gcb(),item=b[section].find(x=>x.id===id);eid=id;es=section;
   openOv('Modifier',bForm(item,section),()=>{const avant=JSON.stringify(D);const b2=gcb();b2[es]=b2[es].filter(x=>x.id!==eid);sv();render();toastAnnuler('« '+item.nom+' » supprimée',avant);});
+  fFocusMontant(false);
 }
 function svB(){
   const nom=document.getElementById('fn').value.trim(),montant=parseFloat(document.getElementById('fm').value)||0;
