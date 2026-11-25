@@ -3949,13 +3949,27 @@ function pjRythme(p){ // progression mensuelle moyenne du compte sur les dernier
   const m=moisCle(pts[pts.length-1].k)-moisCle(pts[0].k);
   return m>0?(pts[pts.length-1].v-pts[0].v)/m:null;
 }
+// Virements du mois en cours rattachés au projet et déjà débités
+function pjDebiteMois(p){
+  if(p.type!=='epargne')return 0;
+  const b=(D.budgets||{})[moisAujourdhui()];
+  return((b&&b.epargne)||[]).filter(x=>x.projet===p.id&&(x.statut==='Débité'||x.statut==='Fait')&&(x.montant||0)>0).reduce((a,x)=>a+x.montant,0);
+}
 function pjMoisRestants(p){
   if(!p.echeance)return null;
-  return Math.max(1,moisCle(p.echeance)-moisCle(moisAujourdhui())+1);
+  // Versement du mois déjà débité : le mois en cours ne compte plus
+  const n=moisCle(p.echeance)-moisCle(moisAujourdhui())+1-(pjDebiteMois(p)>0?1:0);
+  return Math.max(1,n);
 }
 function pjMensuel(p){
   if(p.type!=='epargne'||!p.echeance)return null;
-  const r=pjCible(p)-pjAtteint(p);if(r<=0)return 0;
+  let a=pjAtteint(p);
+  // Si le compte n'a pas encore été mis à jour dans Patrimoine, on ajoute le virement débité du mois
+  const dm=pjDebiteMois(p);
+  if(dm>0){const M=D.patrimoine.snapshots||{},ks=Object.keys(M).filter(k=>k<moisAujourdhui()).sort(),pk=ks[ks.length-1];   // dernier mois figé : sûr de ne pas contenir le virement
+    const v0=pk?pjValeurCompte(M[pk],p.compte):null;
+    if(v0!==null){let e=v0+dm;if(p.part)e=Math.min(p.part,e);a=Math.max(a,e);}}
+  const r=pjCible(p)-a;if(r<=0)return 0;
   return Math.ceil(r/pjMoisRestants(p));
 }
 function pjEtat(p){
