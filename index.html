@@ -2731,6 +2731,15 @@ function moisReel(){
   return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
 }
 function clCoche(k,item){return((D.checklist||{})[k]||[]).includes(item);}
+// Coche automatique d'une étape de fin de mois (reste décochable à la main)
+function clAuto(item){
+  const k=moisReel();if(!D.checklist)D.checklist={};if(!D.checklist[k])D.checklist[k]=[];
+  if(!D.checklist[k].includes(item))D.checklist[k].push(item);
+}
+function peaCoursCheck(){
+  const k=moisReel(),pos=D.pea.positions||[];
+  if(pos.length&&pos.every(p=>p.coursMaj===k))clAuto('cours');
+}
 function clToggle(item,ev){
   if(ev&&ev.stopPropagation)ev.stopPropagation();
   const k=moisReel();
@@ -2758,7 +2767,7 @@ function renderFinMois(){
 
   // Étapes : certaines se cochent seules, d'autres à la main
   const etapes=[];
-  etapes.push({id:'soldes',lbl:'Relever les soldes bancaires',auto:false});
+  etapes.push({id:'soldes',lbl:'Mettre à jour livrets et assurance vie',auto:false});
   const aBricks=(D.bricks.mouvements||[]).length>0||
     Object.values(snaps).some(s=>(s.immobilier||[]).some(x=>x.type==='bricks'));
   if(aBricks)etapes.push({id:'bricks',lbl:'Relever le solde Bricks',auto:false});
@@ -3924,6 +3933,7 @@ function expEnregistrer(figer){
     const id=parseInt(el.id.split('-').pop(),10),sec=el.dataset.sec;
     const it=(data[sec]||[]).find(x=>x.id===id);if(it)it.valeur=Math.round(v*100)/100;
   });
+  clAuto('soldes');
   sv();closeOv();
   if(figer)svSnap();else renderP();
 }
@@ -5181,8 +5191,10 @@ function savePos(id){
     cours:parseFloat(document.getElementById('pfCours').value)||0,
     pru:parseFloat(document.getElementById('pfPru').value)||0,
     ic:posIc||det.ic,col:posCol||det.col};
+  o.coursMaj=moisReel();
   if(id!=null){const p=D.pea.positions.find(x=>x.id===id);if(p)Object.assign(p,o);}
   else D.pea.positions.push(Object.assign({id:nid()},o));
+  peaCoursCheck();
   sv();closeOv();renderPea();
 }
 
@@ -5401,8 +5413,9 @@ function crCalc(){
 function saveCours(){
   (D.pea.positions||[]).forEach(p=>{
     const e=document.getElementById('cr'+p.id);
-    if(e){const v=parseFloat(e.value);if(!isNaN(v)&&v>=0)p.cours=v;}
+    if(e){const v=parseFloat(e.value);if(!isNaN(v)&&v>=0){p.cours=v;p.coursMaj=moisReel();}}
   });
+  peaCoursCheck();
   sv();closeOv();renderPea();
 }
 
@@ -6236,6 +6249,7 @@ function svP(section){
   const data=getED();if(!data)return;
   if(eid!==null){const a=data[section],i=a.findIndex(x=>x.id===eid);if(i>=0)a[i]={...a[i],nom,valeur,banque,type};}
   else data[section].push({id:nid(),nom,valeur,banque,type});
+  if(section==='epargne'&&['livret','ldd','av'].includes(type))clAuto('soldes');
   sv();closeOv();renderP();
 }
 
